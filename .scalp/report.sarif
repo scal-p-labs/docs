@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SCAL-P",
+          "version": "dev",
+          "informationUri": "https://github.com/scal-p-labs/SCAL-P"
+        }
+      },
+      "results": [],
+      "invocations": [
+        {
+          "endTimeUtc": "2026-05-22T14:12:24Z",
+          "executionSuccessful": true
+        }
+      ]
+    }
+  ]
+}

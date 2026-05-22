@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/scal-p-labs/SCAL-P/main/.scalp/policy.schema.json",
+  "version": 1,
+  "trust": {
+    "mode": "audit-only",
+    "min_score": 20,
+    "require_hash": true
+  },
+  "packages": {
+    "deny": [
+      { "pattern": "*-crypto-miner" },
+      { "pattern": "*-miner" },
+      { "pattern": "bitcoin" },
+      { "pattern": "@faker-js/*" },
+      { "pattern": "test-data-bot" }
+    ]
+  },
+  "transitive": {
+    "max_depth": 8
+  },
+  "enforcement": {
+    "on_violation": "block",
+    "default_mode": "passthrough"
+  }
+}
