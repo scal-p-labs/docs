@@ -84,7 +84,7 @@ jobs:
       - run: npm ci
 
       - name: Run SCAL-P CI
-        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
         with:
           version: latest
           output: .scalp/ci-report.json
@@ -115,7 +115,7 @@ jobs:
       - run: npm ci
 
       - name: Run SCAL-P CI
-        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
         with:
           version: latest
           sarif: .scalp/report.sarif
@@ -137,7 +137,7 @@ jobs:
 ```yaml
 - name: Run SCAL-P CI (fork)
   if: github.event.pull_request.head.repo.fork == true
-  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     version: latest
     pr-context: fork
@@ -145,7 +145,7 @@ jobs:
 
 - name: Run SCAL-P CI (internal)
   if: github.event.pull_request.head.repo.fork == false
-  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     version: latest
     pr-context: internal
@@ -174,7 +174,7 @@ jobs:
             run: npm install -g ${{ matrix.pm }}
 
           - name: Run SCAL-P CI with ${{ matrix.pm }}
-            uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+            uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
             with:
               version: latest
               pm: ${{ matrix.pm }}
@@ -207,7 +207,7 @@ jobs:
             run: ${{ matrix.install || format('npm install -g {0}', matrix.pm) }}
 
           - name: Run SCAL-P CI with ${{ matrix.pm }}
-            uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+            uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
             with:
               version: latest
               pm: ${{ matrix.pm }}

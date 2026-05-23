@@ -62,8 +62,7 @@ scalp ci
 First run (no policy file):
 
 ```
-WARN  policy not found; defaulting to audit-only
-INFO  ci passed: 0 violations
+! policy not found; allowing with audit
 ```
 
 Report written to `.scalp/ci-report.json`:
@@ -85,8 +84,7 @@ Report written to `.scalp/ci-report.json`:
 If a package violates policy or trust scoring:
 
 ```
-ERROR policy violation: evil@1.0.0 (denylist_match: pattern:*-free)
-ERROR ci failed: 1 violations
+ci failed: [{"PackageID":"evil@1.0.0","Reason":"denylist","Rule":"pattern:*-free"}]
 ```
 
 Report:

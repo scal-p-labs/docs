@@ -40,14 +40,15 @@ scalp policy check
 When policy passes:
 
 ```
-INFO  policy check passed: 0 violations
+policy check ok
 ```
 
-When violations are found:
+When violations are found (warn mode):
 
 ```
-WARN  policy violation: malicious-pkg@1.0.0 (denylist_match: name:malicious-pkg)
-WARN  policy check failed: 1 violations
+! policy violations detected
+policy violations detected:
+- malicious-pkg@1.0.0 (denylist: denylist)
 ```
 
 ## With CI enforcement

@@ -55,15 +55,13 @@ scalp verify \
 On match:
 
 ```
-INFO  binary verified: scalp_linux_amd64.tar.gz (sha512-a1b2...)
+binary verified
 ```
 
 On mismatch:
 
 ```
-WARN  binary mismatch: scalp_linux_amd64.tar.gz
-       expected: sha512-a1b2c3d4e5f6...
-       actual:   sha512-7f8e9d0c1b2a...
+hash_mismatch: expected sha512-a1b2c3d4e5f6..., got sha512-7f8e9d0c1b2a...
 ```
 
 ### Flags
@@ -97,7 +95,7 @@ scalp verify \
 On mismatch, exit code 1:
 
 ```
-ERROR binary mismatch: blocking
+hash_mismatch: expected sha512-a1b2..., got sha512-7f8e...
 ```
 
 ## Audit events

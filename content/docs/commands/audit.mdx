@@ -32,17 +32,21 @@ scalp audit
 On success:
 
 ```
-INFO  audit passed: 142 verified, 0 mismatched, 0 missing
+audit ok
 ```
 
-On tampering detected:
+On tampering detected (warn mode):
 
 ```
-WARN  hash mismatch: lodash@4.17.21
-       expected: sha512-a1b2c3d4e5f6...
-       actual:   sha512-7f8e9d0c1b2a...
+! policy violations detected
+policy violations detected:
+- lodash@4.17.21 (hash_mismatch: hash_check)
+```
 
-WARN  audit failed: 141 verified, 1 mismatched, 0 missing
+On tampering detected (block mode via `--ci`):
+
+```
+ci failed: [{"PackageID":"lodash@4.17.21","Reason":"hash_mismatch","Rule":"hash_check"}]
 ```
 
 ## Detecting tampering
@@ -61,9 +65,9 @@ scalp audit
 ```
 
 ```
-WARN  hash mismatch: lodash@4.17.21
-       expected: sha512-a1b2c3d4e5f6...
-       actual:   sha512-7f8e9d0c1b2a...
+! policy violations detected
+policy violations detected:
+- lodash@4.17.21 (hash_mismatch: hash_check)
 ```
 
 <Callout type="warning">
@@ -125,8 +129,7 @@ scalp audit --ci
 On mismatch:
 
 ```
-ERROR hash mismatch: lodash@4.17.21
-ERROR audit failed: 1 violations — blocking
+ci failed: [{"PackageID":"lodash@4.17.21","Reason":"hash_mismatch","Rule":"hash_check"}]
 ```
 
 Exit code 1.

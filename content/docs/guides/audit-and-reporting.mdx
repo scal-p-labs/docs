@@ -40,14 +40,15 @@ scalp audit
 If everything matches:
 
 ```
-INFO  audit passed: 142 verified, 0 mismatched, 0 missing
+audit ok
 ```
 
 If tampering is detected:
 
 ```
-WARN  hash mismatch: lodash@4.17.21 (expected: sha512-a1b2..., got: sha512-3c4d...)
-WARN  audit failed: 141 verified, 1 mismatched, 0 missing
+! policy violations detected
+policy violations detected:
+- lodash@4.17.21 (hash_mismatch: hash_check)
 ```
 
 ### Flags
@@ -188,7 +189,7 @@ The easiest way is using the SCAL-P GitHub Action:
 
 ```yaml
 - name: Run SCAL-P CI
-  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     version: latest
     sarif: .scalp/report.sarif

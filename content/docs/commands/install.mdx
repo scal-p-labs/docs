@@ -72,8 +72,9 @@ scalp install --guarded
 Policy denies `lodash-free`:
 
 ```
-WARN  policy violation: lodash-free@1.0.0 (denylist_match: pattern:*-free)
-INFO  install skipped: policy violations found
+! policy violations detected
+policy violations detected:
+- lodash-free@1.0.0 (denylist: pattern:*-free)
 ```
 
 ### Guarded install passing
@@ -82,12 +83,7 @@ INFO  install skipped: policy violations found
 scalp install --guarded
 ```
 
-```
-INFO  no violations — installing
-INFO  binary verified: lodash@4.17.21
-INFO  binary verified: express@4.18.2
-INFO  lockfile synced: 142 packages hashed
-```
+On success, the command exits silently. On violations, the policy enforcement takes effect and blocks the install:
 
 ## Passing arguments to the package manager
 

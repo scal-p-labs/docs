@@ -91,7 +91,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     If the network is slow or unavailable, you'll see:
 
     ```
-    WARN  failed to fetch downloads for lodash: context deadline exceeded
+    ! trust score: no lockfile, using offline-only factors
     ```
 
     This is **not a failure** — trust scores degrade gracefully (half points for unknown data). The command continues normally. Cached data is used when available.

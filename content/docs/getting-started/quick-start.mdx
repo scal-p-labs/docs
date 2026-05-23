@@ -28,8 +28,7 @@ scalp ci
 You'll see output like:
 
 ```
-WARN  policy not found; defaulting to audit-only
-INFO  ci passed: 0 violations
+! policy not found; allowing with audit
 ```
 
 All packages passed because the default policy only audits. No blocking.
@@ -87,7 +86,9 @@ scalp ci
 If you have a package like `lodash-free` in your tree, you'll see:
 
 ```
-WARN  policy violation: lodash-free@1.0.0 (denylist_match: pattern:*-free)
+! policy violations detected
+policy violations detected:
+- lodash-free@1.0.0 (denylist: pattern:*-free)
 ```
 
 ## Install with enforcement

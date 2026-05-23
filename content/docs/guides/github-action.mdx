@@ -9,7 +9,7 @@ The [SCAL-P GitHub Action](https://github.com/scal-p-labs/scalp-action) is the r
 ## Usage
 
 ```yaml
-- uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+- uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     version: latest
     sarif: .scalp/report.sarif
@@ -57,7 +57,7 @@ jobs:
       - run: npm ci
 
       - name: SCAL-P CI
-        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
         with:
           version: latest
 ```
@@ -80,7 +80,7 @@ jobs:
       - run: npm ci
 
       - name: Run SCAL-P CI
-        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
         with:
           version: latest
           sarif: .scalp/report.sarif
@@ -96,7 +96,7 @@ jobs:
 ### Custom version and policy
 
 ```yaml
-- uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+- uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     version: v0.2.0
     policy: config/scalp-policy.json
@@ -106,7 +106,7 @@ jobs:
 ### Monorepo with working directory
 
 ```yaml
-- uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+- uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     version: latest
     working-directory: packages/my-app
@@ -117,7 +117,7 @@ jobs:
 
 ```yaml
 - name: Run SCAL-P CI
-  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   id: scalp
 
 - name: Check result
@@ -150,7 +150,7 @@ jobs:
         run: npm install -g ${{ matrix.pm }}
 
       - name: SCAL-P with ${{ matrix.pm }}
-        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
         with:
           pm: ${{ matrix.pm }}
           sarif: .scalp/${{ matrix.pm }}-report.sarif
@@ -191,7 +191,7 @@ Under the hood, the action runs two shell steps:
 
 ```yaml
 # Good — immutable SHA
-uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
 
 # Risky — tag could be moved
 uses: scal-p-labs/scalp-action@v0.3.0

@@ -52,14 +52,13 @@ npm stage download lodash@4.17.21 | scalp stage verify --stage-id lodash@4.17.21
 On success:
 
 ```
-INFO  stage verify passed: lodash@4.17.21
+stage verify passed
 ```
 
-On failure:
+On failure (e.g. identity mismatch):
 
 ```
-WARN  package identity mismatch: expected lodash@4.17.21, got malicious-pkg@1.0.0
-WARN  stage verify failed: lodash@4.17.21
+hash_mismatch: expected sha512-abc..., got sha512-def...
 ```
 
 ## With checksum verification
@@ -74,7 +73,7 @@ npm stage download lodash@4.17.21 | \
 If the tarball hash doesn't match:
 
 ```
-ERROR hash mismatch: expected sha512-a1b2..., got sha512-7f8e...
+hash_mismatch: expected sha512-a1b2..., got sha512-7f8e...
 ```
 
 ## With denylist enforcement
@@ -96,8 +95,7 @@ npm stage download lodash-free@1.0.0 | scalp stage verify --stage-id lodash-free
 ```
 
 ```
-ERROR denylist match: lodash-free (pattern:*-free)
-ERROR stage verify failed: lodash-free@1.0.0
+ci failed: [{"PackageID":"lodash-free@1.0.0","Reason":"denylist","Rule":"pattern:*-free"}]
 ```
 
 ## Security: why denylist uses tarball contents

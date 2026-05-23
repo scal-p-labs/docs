@@ -36,16 +36,7 @@ This creates `.scalp/policy.json` with safe defaults — `audit-only` mode, no b
 scalp ci
 ```
 
-Since there's no lockfile yet, SCAL-P resolves the tree, evaluates the policy, installs dependencies, and generates `.scalp/lockfile.json` with SHA-512 hashes for every package:
-
-```txt
-✓ Resolved 42 packages
-✓ Policy evaluation: 0 violations
-✓ Installed (npm install)
-✓ Hash sync: 42 entries written to .scalp/lockfile.json
-✓ CI report written to .scalp/ci-report.json
-✓ Exit 0
-```
+This creates `.scalp/` with `policy.json`, `policy.schema.json`, `lockfile.json`, `audit.log`, and `cache/`.
 
 Inspect what was recorded:
 
@@ -53,15 +44,10 @@ Inspect what was recorded:
 scalp audit
 ```
 
-Sample output:
+Output:
 
 ```txt
-Package          Hash match  Verified at
-express          ✅          2026-05-22T10:00:00Z
-body-parser      ✅          2026-05-22T10:00:00Z
-accepts          ✅          2026-05-22T10:00:00Z
-...
-42 of 42 packages — all match
+audit ok
 ```
 
 ## 3. Add a suspicious dependency
@@ -78,14 +64,10 @@ Run `scalp ci` again with enforcement:
 scalp ci
 ```
 
-This time the evaluation finds violations:
+This time the evaluation finds violations and blocks the install:
 
 ```txt
-✗ Policy evaluation: 2 violations
-  ✗ colors@1.4.2 — denylist match (protestware history)
-  ✗ colors@1.4.2 — hash not found in lockfile
-✗ Blocked: 2 violations exceed threshold
-✗ Exit 1
+ci failed: [{"PackageID":"colors@1.4.2","Reason":"denylist","Rule":"denylist"}]
 ```
 
 The install step never ran — no tarballs were downloaded.
@@ -185,7 +167,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+      - uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
         with:
           pr-context: ${{ github.event.pull_request.head.repo.fork == 'true' && 'fork' || 'internal' }}
           sarif: true
@@ -253,14 +235,13 @@ After merging a clean PR, run `scalp audit` to compare the current lockfile agai
 scalp audit --ci
 ```
 
-This checks every hash in `.scalp/lockfile.json` against `node_modules`. If any package was tampered with (malicious commit, compromised CI runner, manual edit), the audit will report the mismatch:
+This checks every hash in `.scalp/lockfile.json` against `node_modules`. If all packages match:
 
 ```txt
-✗ Hash mismatch: express@4.18.2
-  Expected: sha512-abc123...
-  Actual:  sha512-def456...
-  → Package tampered since last verified baseline
+audit ok
 ```
+
+If any package was tampered with (malicious commit, compromised CI runner, manual edit), the audit returns violations:
 
 ## Recap
 

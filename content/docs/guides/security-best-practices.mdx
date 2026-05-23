@@ -88,7 +88,7 @@ For production services or libraries, use `allowlist` mode. Only explicitly appr
 
 ```yaml
 # Good — immutable
-uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
 
 # Risky — tag could be moved
 uses: scal-p-labs/scalp-action@v0.3.0
@@ -99,7 +99,7 @@ uses: scal-p-labs/scalp-action@v0.3.0
 ```yaml
 - name: SCAL-P (fork)
   if: github.event.pull_request.head.repo.fork == true
-  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217
   with:
     pr-context: fork
 ```
