@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { logo } from '@/lib/shared';
 import { TerminalCard } from '@/components/terminal-card';
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col flex-1">
+    <main className="flex flex-col flex-1 justify-between h-full">
       <section className="flex flex-col items-center justify-center flex-1 px-6 text-center">
         <img
           src={logo}
@@ -20,23 +21,24 @@ export default function HomePage() {
         <div className="flex gap-4">
           <Link
             href="/docs/getting-started/installation"
-            className="inline-flex items-center rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground"
           >
-            Get Started
+            <Button size={"lg"} variant={"outline"}>Get Started</Button>
           </Link>
           <Link
             href="/docs"
-            className="inline-flex items-center rounded-lg border px-6 py-3 font-medium"
           >
-            Documentation
+            <Button size={"lg"} variant={"default"}>Documentation</Button>
           </Link>
         </div>
       </section>
       <section className="w-full max-w-2xl mx-auto px-6 pb-16">
         <TerminalCard />
       </section>
-      <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        SCAL-P — Apache 2.0
+      <footer className="border-t py-6 flex gap-2 items-center justify-center">
+        <h2 className='text-xs font-light font-mono'>SCAL-P — Apache 2.0</h2>
+        <Link href={'https://github.com/scal-p-labs/SCAL-P'}>
+          <Button variant={"link"}>Go to Source Code</Button>
+        </Link>
       </footer>
     </main>
   );

@@ -114,21 +114,18 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
 export function TerminalCard() {
   return (
     <Card className="overflow-hidden">
-      <Tabs defaultValue="init">
-        <div className="border-b px-4 pt-3 pb-0">
-          <TabsList className="w-full justify-start gap-0 bg-transparent">
-            {Object.keys(demos).map((key) => (
-              <TabsTrigger
-                key={key}
-                value={key}
-                className="rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors data-active:border-foreground data-active:text-foreground data-active:bg-transparent"
-              >
-                {key}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-
+      <Tabs defaultValue="init" orientation="vertical" className="gap-0">
+        <TabsList variant="default" className="w-32 flex-col justify-start gap-0 rounded-none border-r bg-transparent h-64">
+          {Object.keys(demos).map((key) => (
+            <TabsTrigger
+              key={key}
+              value={key}
+              
+            >
+              Try {key}
+            </TabsTrigger>
+          ))}
+        </TabsList>
         {Object.entries(demos).map(([key, d]) => (
           <TabsContent key={key} value={key} className="p-4">
             <TerminalWindow demo={d} />
