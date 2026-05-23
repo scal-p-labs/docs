@@ -16,29 +16,31 @@ The [SCAL-P GitHub Action](https://github.com/scal-p-labs/scalp-action) is the r
 ```
 
 <Callout type="info">
-  Always pin the action to a specific commit SHA instead of a tag. Tags are mutable — a tag could be moved to a different commit. SHAs are immutable and guarantee you're running the exact code you reviewed.
+  Always pin the action to a specific commit SHA instead of a tag. Tags are mutable — a tag could be
+  moved to a different commit. SHAs are immutable and guarantee you're running the exact code you
+  reviewed.
 </Callout>
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `version` | no | `latest` | SCAL-P version (e.g. `v0.3.0`). Use `latest` for the newest release. |
-| `pm` | no | auto-detect | Package manager: `npm`, `pnpm`, `yarn`, `bun`. |
-| `policy` | no | `.scalp/policy.json` | Path to policy file, relative to `working-directory`. |
-| `output` | no | `.scalp/ci-report.json` | Path for the CI report, relative to `working-directory`. |
-| `pr-context` | no | `fork` | PR context: `fork` (blocks scripts, forces hashes) or `internal` (respects policy). |
-| `allow-scripts` | no | `false` | Allow install scripts (only applies to `internal` PRs). |
-| `sarif` | no | (empty) | Path for SARIF 2.1.0 report, relative to `working-directory`. Leave empty to skip. |
-| `working-directory` | no | `.` | Working directory relative to repo root (useful for monorepos). |
+| Input               | Required | Default                 | Description                                                                         |
+| ------------------- | -------- | ----------------------- | ----------------------------------------------------------------------------------- |
+| `version`           | no       | `latest`                | SCAL-P version (e.g. `v0.3.0`). Use `latest` for the newest release.                |
+| `pm`                | no       | auto-detect             | Package manager: `npm`, `pnpm`, `yarn`, `bun`.                                      |
+| `policy`            | no       | `.scalp/policy.json`    | Path to policy file, relative to `working-directory`.                               |
+| `output`            | no       | `.scalp/ci-report.json` | Path for the CI report, relative to `working-directory`.                            |
+| `pr-context`        | no       | `fork`                  | PR context: `fork` (blocks scripts, forces hashes) or `internal` (respects policy). |
+| `allow-scripts`     | no       | `false`                 | Allow install scripts (only applies to `internal` PRs).                             |
+| `sarif`             | no       | (empty)                 | Path for SARIF 2.1.0 report, relative to `working-directory`. Leave empty to skip.  |
+| `working-directory` | no       | `.`                     | Working directory relative to repo root (useful for monorepos).                     |
 
 ## Outputs
 
-| Output | Description | Example |
-|--------|-------------|---------|
-| `status` | CI run result | `pass` or `fail` |
-| `report-path` | Absolute path to the JSON report | `/home/runner/work/repo/.scalp/ci-report.json` |
-| `sarif-path` | Absolute path to the SARIF report | `/home/runner/work/repo/.scalp/report.sarif` |
+| Output        | Description                       | Example                                        |
+| ------------- | --------------------------------- | ---------------------------------------------- |
+| `status`      | CI run result                     | `pass` or `fail`                               |
+| `report-path` | Absolute path to the JSON report  | `/home/runner/work/repo/.scalp/ci-report.json` |
+| `sarif-path`  | Absolute path to the SARIF report | `/home/runner/work/repo/.scalp/report.sarif`   |
 
 ## Examples
 
@@ -162,30 +164,36 @@ Under the hood, the action runs two shell steps:
 
 <Steps>
   <Step>
-    **Install SCAL-P** — runs `scripts/install-scalp.sh` which detects the runner OS and architecture (linux/darwin/windows × amd64/arm64), resolves the latest version if needed, downloads the correct release archive, verifies its SHA-512 checksum against the release's `checksums.txt`, and installs the binary to `$HOME/.local/bin/scalp`.
+    **Install SCAL-P** — runs `scripts/install-scalp.sh` which detects the runner OS and
+    architecture (linux/darwin/windows × amd64/arm64), resolves the latest version if needed,
+    downloads the correct release archive, verifies its SHA-512 checksum against the release's
+    `checksums.txt`, and installs the binary to `$HOME/.local/bin/scalp`.
   </Step>
   <Step>
-    **Run `scalp ci`** — executes `scalp ci` with all the inputs mapped to CLI flags. Converts relative paths to absolute paths for the outputs. Writes `status`, `report-path`, and `sarif-path` to `$GITHUB_OUTPUT`. If the CLI exits non-zero, sets `status=fail` and propagates the failure.
+    **Run `scalp ci`** — executes `scalp ci` with all the inputs mapped to CLI flags. Converts
+    relative paths to absolute paths for the outputs. Writes `status`, `report-path`, and
+    `sarif-path` to `$GITHUB_OUTPUT`. If the CLI exits non-zero, sets `status=fail` and propagates
+    the failure.
   </Step>
 </Steps>
 
 ### Security in the install script
 
-| Measure | What it does |
-|---------|-------------|
-| SHA-512 verification | Downloads `checksums.txt` from the release and verifies the binary's hash via `openssl dgst -sha512` |
-| Magic byte check | Rejects downloaded files that aren't actual gzip or zip archives (catches GitHub HTML error pages) |
-| Binary-only install | Extracts only the `scalp` binary, discarding READMEs, licenses, and other files |
-| Temp directory cleanup | Creates a temporary directory on start, removes it on exit (even on failure) |
-| `GITHUB_PATH` registration | Appends the install directory to `$GITHUB_PATH` so scalp is available in subsequent steps |
+| Measure                    | What it does                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| SHA-512 verification       | Downloads `checksums.txt` from the release and verifies the binary's hash via `openssl dgst -sha512` |
+| Magic byte check           | Rejects downloaded files that aren't actual gzip or zip archives (catches GitHub HTML error pages)   |
+| Binary-only install        | Extracts only the `scalp` binary, discarding READMEs, licenses, and other files                      |
+| Temp directory cleanup     | Creates a temporary directory on start, removes it on exit (even on failure)                         |
+| `GITHUB_PATH` registration | Appends the install directory to `$GITHUB_PATH` so scalp is available in subsequent steps            |
 
 ### Platform support
 
-| OS | Architectures |
-|----|---------------|
-| Linux | amd64, arm64 |
-| macOS | amd64, arm64 |
-| Windows | amd64 |
+| OS      | Architectures |
+| ------- | ------------- |
+| Linux   | amd64, arm64  |
+| macOS   | amd64, arm64  |
+| Windows | amd64         |
 
 ## Why SHA pinning matters
 

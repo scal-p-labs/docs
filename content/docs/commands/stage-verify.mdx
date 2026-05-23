@@ -13,34 +13,38 @@ npm stage download <stage-id> | scalp stage verify --stage-id <package@version> 
 ```
 
 <Callout type="info">
-  `npm stage download` is part of npm's private packages / staging feature. If you don't use npm stages, you can pipe any tarball from any source — `curl`, `cat`, or a CI pipeline — as long as it's a valid npm package tarball on stdin.
+  `npm stage download` is part of npm's private packages / staging feature. If you don't use npm
+  stages, you can pipe any tarball from any source — `curl`, `cat`, or a CI pipeline — as long as
+  it's a valid npm package tarball on stdin.
 </Callout>
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--stage-id` | required | Expected package name + version (e.g. `lodash@4.17.21`) |
-| `--policy` | `.scalp/policy.json` | Policy path |
-| `--checksum` | "" | Expected SHA-512 hash for the tarball |
-| `--sarif` | "" | Path for SARIF 2.1.0 report |
-| `--ci` | false | Force enforcement to `block` |
+| Flag         | Default              | Description                                             |
+| ------------ | -------------------- | ------------------------------------------------------- |
+| `--stage-id` | required             | Expected package name + version (e.g. `lodash@4.17.21`) |
+| `--policy`   | `.scalp/policy.json` | Policy path                                             |
+| `--checksum` | ""                   | Expected SHA-512 hash for the tarball                   |
+| `--sarif`    | ""                   | Path for SARIF 2.1.0 report                             |
+| `--ci`       | false                | Force enforcement to `block`                            |
 
 ## Verification checks
 
 <Steps>
   <Step>
-    **Hash verification** — computes SHA-512 of the piped tarball in a streaming fashion (no temp files). Compares against `--checksum` if provided.
+    **Hash verification** — computes SHA-512 of the piped tarball in a streaming fashion (no temp
+    files). Compares against `--checksum` if provided.
   </Step>
   <Step>
-    **Package identity** — extracts `package/package.json` from inside the tarball, parses the `name` field, and verifies it matches `--stage-id`.
+    **Package identity** — extracts `package/package.json` from inside the tarball, parses the
+    `name` field, and verifies it matches `--stage-id`.
   </Step>
   <Step>
-    **Denylist check** — checks the extracted package name against policy deny rules (name + pattern). This runs against the **actual tarball contents**, not the user-supplied `--stage-id`, preventing bypass attacks.
+    **Denylist check** — checks the extracted package name against policy deny rules (name +
+    pattern). This runs against the **actual tarball contents**, not the user-supplied `--stage-id`,
+    preventing bypass attacks.
   </Step>
-  <Step>
-    **Enforcement** — `--ci` forces block. Otherwise uses policy's `on_violation`.
-  </Step>
+  <Step>**Enforcement** — `--ci` forces block. Otherwise uses policy's `on_violation`.</Step>
 </Steps>
 
 ## Example
@@ -129,7 +133,8 @@ Forces `block` on any violation.
 The tarball is read from stdin via an `io.TeeReader` that simultaneously feeds data to both a SHA-512 hasher and a gzip decompressor. The decompressed tar stream is parsed to find `package/package.json`. Once the package name is extracted and the hash is computed, all checks run. No temporary files, no disk writes.
 
 <Callout type="info">
-  This streaming approach means SCAL-P can verify tarballs of any size without memory or disk overhead.
+  This streaming approach means SCAL-P can verify tarballs of any size without memory or disk
+  overhead.
 </Callout>
 
 <Cards>

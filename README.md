@@ -24,15 +24,15 @@ The site is deployed from this repository — content lives under `content/docs/
 
 ## Tech stack
 
-| Layer | Choice |
-|-------|--------|
-| Framework | Next.js 16 (App Router) |
-| Documentation engine | Fumadocs MDX |
-| UI | Radix UI + shadcn/ui + Tailwind CSS 4 |
-| Icons | Lucide React |
-| Diagrams | Mermaid (via beautiful-mermaid) |
-| Format + lint | oxfmt + oxlint |
-| Package manager | pnpm |
+| Layer                | Choice                                |
+| -------------------- | ------------------------------------- |
+| Framework            | Next.js 16 (App Router)               |
+| Documentation engine | Fumadocs MDX                          |
+| UI                   | Radix UI + shadcn/ui + Tailwind CSS 4 |
+| Icons                | Lucide React                          |
+| Diagrams             | Mermaid (via beautiful-mermaid)       |
+| Format + lint        | oxfmt + oxlint                        |
+| Package manager      | pnpm                                  |
 
 ---
 

@@ -24,7 +24,8 @@ The easiest way. Grab the latest release from the [releases page](https://github
     ```
   </Tab>
   <Tab>
-    Download `scalp_windows_amd64.zip` from the [releases page](https://github.com/scal-p-labs/SCAL-P/releases), extract, and add to your PATH.
+    Download `scalp_windows_amd64.zip` from the [releases
+    page](https://github.com/scal-p-labs/SCAL-P/releases), extract, and add to your PATH.
   </Tab>
 </Tabs>
 
@@ -41,7 +42,8 @@ go install github.com/scal-p-labs/SCAL-P/cmd/scalp@latest
 ```
 
 <Callout type="info">
-  The binary is named `scalp` (no hyphen) regardless of installation method. The Go module path is `scal-p` (with hyphen), but the CLI command is always `scalp`.
+  The binary is named `scalp` (no hyphen) regardless of installation method. The Go module path is
+  `scal-p` (with hyphen), but the CLI command is always `scalp`.
 </Callout>
 
 ## Build from source
@@ -88,19 +90,20 @@ scalp verify \
 ```
 
 <Callout type="info">
-  This is dogfooding — SCAL-P verifies its own releases using the exact same engine it uses to verify your npm packages.
+  This is dogfooding — SCAL-P verifies its own releases using the exact same engine it uses to
+  verify your npm packages.
 </Callout>
 
 ## Package manager detection
 
 SCAL-P auto-detects your package manager from the lockfile:
 
-| Lockfile | Package manager |
-|----------|----------------|
-| `package-lock.json` | npm |
-| `pnpm-lock.yaml` | pnpm |
-| `yarn.lock` | yarn (Berry v2+) |
-| `bun.lock` / `bun.lockb` | bun |
+| Lockfile                 | Package manager  |
+| ------------------------ | ---------------- |
+| `package-lock.json`      | npm              |
+| `pnpm-lock.yaml`         | pnpm             |
+| `yarn.lock`              | yarn (Berry v2+) |
+| `bun.lock` / `bun.lockb` | bun              |
 
 If you have multiple lockfiles or none, use `--pm` to specify:
 

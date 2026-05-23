@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { cn } from "@/lib/cn"
-import { Card } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/cn";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type TerminalDemo = {
-  title: string
-  lines: string[]
-}
+  title: string;
+  lines: string[];
+};
 
 const demos: Record<string, TerminalDemo> = {
   init: {
@@ -31,46 +31,42 @@ const demos: Record<string, TerminalDemo> = {
   },
   ci: {
     title: "scalp ci",
-    lines: [
-      "fork context: require_hash enforced, install scripts blocked",
-    ],
+    lines: ["fork context: require_hash enforced, install scripts blocked"],
   },
   audit: {
     title: "scalp audit",
-    lines: [
-      "audit ok",
-    ],
+    lines: ["audit ok"],
   },
-}
+};
 
 function TerminalWindow({ demo }: { demo: TerminalDemo }) {
-  const [outputIndex, setOutputIndex] = useState(0)
-  const [showCursor, setShowCursor] = useState(true)
+  const [outputIndex, setOutputIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
-    setOutputIndex(0)
-    setShowCursor(true)
+    setOutputIndex(0);
+    setShowCursor(true);
 
-    const t1 = setTimeout(() => setOutputIndex(1), 400)
-    const blink = setInterval(() => setShowCursor((c) => !c), 530)
+    const t1 = setTimeout(() => setOutputIndex(1), 400);
+    const blink = setInterval(() => setShowCursor((c) => !c), 530);
 
     return () => {
-      clearTimeout(t1)
-      clearInterval(blink)
-    }
-  }, [demo])
+      clearTimeout(t1);
+      clearInterval(blink);
+    };
+  }, [demo]);
 
   useEffect(() => {
-    if (outputIndex === 0) return
+    if (outputIndex === 0) return;
 
     const t = setTimeout(() => {
-      setOutputIndex((i) => Math.min(i + 1, demo.lines.length + 1))
-    }, 100)
+      setOutputIndex((i) => Math.min(i + 1, demo.lines.length + 1));
+    }, 100);
 
-    return () => clearTimeout(t)
-  }, [outputIndex, demo.lines.length])
+    return () => clearTimeout(t);
+  }, [outputIndex, demo.lines.length]);
 
-  const visibleLines = outputIndex > 0 ? demo.lines.slice(0, outputIndex - 1) : []
+  const visibleLines = outputIndex > 0 ? demo.lines.slice(0, outputIndex - 1) : [];
 
   return (
     <div className="rounded-lg bg-zinc-950 p-4 font-mono text-sm leading-relaxed shadow-2xl">
@@ -88,12 +84,7 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
         </div>
 
         {visibleLines.map((line, i) => (
-          <div
-            key={i}
-            className={cn(
-              line.startsWith("! ") ? "text-yellow-400" : "text-zinc-400",
-            )}
-          >
+          <div key={i} className={cn(line.startsWith("! ") ? "text-yellow-400" : "text-zinc-400")}>
             {line}
           </div>
         ))}
@@ -108,20 +99,19 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export function TerminalCard() {
   return (
     <Card className="overflow-hidden">
       <Tabs defaultValue="init" orientation="vertical" className="gap-0">
-        <TabsList variant="default" className="w-32 flex-col justify-start gap-0 rounded-none border-r bg-transparent h-64">
+        <TabsList
+          variant="default"
+          className="w-32 flex-col justify-start gap-0 rounded-none border-r bg-transparent h-64"
+        >
           {Object.keys(demos).map((key) => (
-            <TabsTrigger
-              key={key}
-              value={key}
-              
-            >
+            <TabsTrigger key={key} value={key}>
               Try {key}
             </TabsTrigger>
           ))}
@@ -133,5 +123,5 @@ export function TerminalCard() {
         ))}
       </Tabs>
     </Card>
-  )
+  );
 }

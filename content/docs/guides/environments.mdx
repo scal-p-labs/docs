@@ -8,14 +8,14 @@ SCAL-P is a single binary, but its role changes depending on where you run it. T
 
 ## At a glance
 
-| Environment | Command | Mode | Policy required? |
-|---|---|---|---|
-| Local dev | `scalp install` | Passthrough (warn only) | No (defaults to allow + warn) |
-| Guarded local dev | `scalp install --guarded` | Enforcement | Recommended |
-| CI (PR checks) | `scalp policy check` | Evaluation only | Yes |
-| CI (install + verify) | `scalp ci` | Full pipeline | Recommended |
-| Pre-publish | `scalp stage verify` | Verification only | Optional |
-| Release verification | `scalp verify` | Checksum match | No |
+| Environment           | Command                   | Mode                    | Policy required?              |
+| --------------------- | ------------------------- | ----------------------- | ----------------------------- |
+| Local dev             | `scalp install`           | Passthrough (warn only) | No (defaults to allow + warn) |
+| Guarded local dev     | `scalp install --guarded` | Enforcement             | Recommended                   |
+| CI (PR checks)        | `scalp policy check`      | Evaluation only         | Yes                           |
+| CI (install + verify) | `scalp ci`                | Full pipeline           | Recommended                   |
+| Pre-publish           | `scalp stage verify`      | Verification only       | Optional                      |
+| Release verification  | `scalp verify`            | Checksum match          | No                            |
 
 ## Local development
 
@@ -56,7 +56,8 @@ CI is where SCAL-P provides the most value. A single `scalp ci` command bundles:
 7. Write CI report + optional SARIF
 8. Exit 0 or 1
 
-<Mermaid chart={`
+<Mermaid
+  chart={`
 flowchart TD
   A["scalp ci"]
   A --> B["1. Load policy"]
@@ -70,7 +71,8 @@ flowchart TD
   I --> J["7. Verify against tree"]
   J --> K["8. Write report + SARIF"]
   K --> L["9. Exit 0"]
-`} />
+`}
+/>
 
 ### PR context handling
 
@@ -104,7 +106,8 @@ This resolves the dependency tree, evaluates it against policy and trust scores,
 - CI workflows where you want a fast feedback loop
 
 <Callout type="info">
-`scalp policy check` is the fastest SCAL-P command because it skips installation and hashing entirely. Use it as an early gate in CI before running the full `scalp ci`.
+  `scalp policy check` is the fastest SCAL-P command because it skips installation and hashing
+  entirely. Use it as an early gate in CI before running the full `scalp ci`.
 </Callout>
 
 See [Command Reference: policy check](/docs/commands/policy-check).

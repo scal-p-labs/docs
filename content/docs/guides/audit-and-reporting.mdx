@@ -28,7 +28,8 @@ After packages are installed, SCAL-P creates a separate lockfile (`.scalp/lockfi
 When you run `scalp audit`, it re-hashes every package directory and compares against the lockfile. Any mismatch means something changed on disk.
 
 <Callout type="warning">
-  This detects post-install tampering, modified files, added files, and removed files. If a compromised script modified a package after install, `scalp audit` catches it.
+  This detects post-install tampering, modified files, added files, and removed files. If a
+  compromised script modified a package after install, `scalp audit` catches it.
 </Callout>
 
 ## `scalp audit`
@@ -53,14 +54,14 @@ policy violations detected:
 
 ### Flags
 
-| Flag | Description |
-|------|-------------|
-| `--pm` | Package manager override (auto-detected) |
-| `--policy` | Policy path (default `.scalp/policy.json`) |
-| `--ci` | Force enforcement to `block` |
-| `--report` | Generate a report file (`.md` or `.sarif`) |
+| Flag         | Description                                            |
+| ------------ | ------------------------------------------------------ |
+| `--pm`       | Package manager override (auto-detected)               |
+| `--policy`   | Policy path (default `.scalp/policy.json`)             |
+| `--ci`       | Force enforcement to `block`                           |
+| `--report`   | Generate a report file (`.md` or `.sarif`)             |
 | `--artifact` | Path to a binary artifact to verify alongside packages |
-| `--checksum` | Checksums file for binary verification |
+| `--checksum` | Checksums file for binary verification                 |
 
 ### Audit + report
 
@@ -89,17 +90,17 @@ This runs the package audit and binary verification in a single command, produci
 
 The Markdown report includes:
 
-| Section | Contents |
-|---------|----------|
-| Header | Tool version, policy status (loaded/missing), package manager, pass/fail |
-| Summary | Total packages, verified/mismatched/missing counts, trust violations, CVEs |
-| Hash Verification | Per-package status table |
-| Trust Scores | Per-package breakdown (hash, maturity, downloads, CVEs) with verdict |
-| CVEs | Vulnerability table from npm audit |
-| Binary Verification | Artifact hash comparison |
-| Policy | Full policy JSON in a code block |
-| Violations | All violations with rule and reason |
-| Audit Events | Raw NDJSON event log |
+| Section             | Contents                                                                   |
+| ------------------- | -------------------------------------------------------------------------- |
+| Header              | Tool version, policy status (loaded/missing), package manager, pass/fail   |
+| Summary             | Total packages, verified/mismatched/missing counts, trust violations, CVEs |
+| Hash Verification   | Per-package status table                                                   |
+| Trust Scores        | Per-package breakdown (hash, maturity, downloads, CVEs) with verdict       |
+| CVEs                | Vulnerability table from npm audit                                         |
+| Binary Verification | Artifact hash comparison                                                   |
+| Policy              | Full policy JSON in a code block                                           |
+| Violations          | All violations with rule and reason                                        |
+| Audit Events        | Raw NDJSON event log                                                       |
 
 Example output:
 
@@ -114,14 +115,14 @@ Example output:
 
 ## Summary
 
-| Metric | Value |
-|--------|-------|
-| Total packages | 142 |
-| ✓ Verified | 142 |
-| ✗ Mismatched | 0 |
-| ✗ Missing | 0 |
-| Trust violations | 0 |
-| CVEs | 0 |
+| Metric           | Value |
+| ---------------- | ----- |
+| Total packages   | 142   |
+| ✓ Verified       | 142   |
+| ✗ Mismatched     | 0     |
+| ✗ Missing        | 0     |
+| Trust violations | 0     |
+| CVEs             | 0     |
 ```
 
 ## JSON report (CI)
@@ -172,15 +173,16 @@ scalp ci --sarif .scalp/report.sarif
 
 Each policy violation becomes a SARIF result:
 
-| SARIF field | Maps from |
-|-------------|-----------|
-| `ruleId` | Normalized rule name (`require_hash`, `min_score`, `allowlist`) |
-| `level` | `error` for most rules, `warning` for `max_depth` |
-| `message.text` | Violation reason |
-| `locations[].physicalLocation.artifactLocation.uri` | Path to package in `node_modules/` |
+| SARIF field                                         | Maps from                                                       |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| `ruleId`                                            | Normalized rule name (`require_hash`, `min_score`, `allowlist`) |
+| `level`                                             | `error` for most rules, `warning` for `max_depth`               |
+| `message.text`                                      | Violation reason                                                |
+| `locations[].physicalLocation.artifactLocation.uri` | Path to package in `node_modules/`                              |
 
 <Callout type="info">
-  The `results` array is always present — even when empty — to satisfy GitHub's `upload-sarif` action requirement.
+  The `results` array is always present — even when empty — to satisfy GitHub's `upload-sarif`
+  action requirement.
 </Callout>
 
 ### GitHub Code Scanning integration

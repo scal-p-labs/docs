@@ -9,7 +9,8 @@ You have a JavaScript project with a `package.json`. You want to know what you'r
 This guide takes you from nothing to a policy-enforced install in a few minutes.
 
 <Callout type="info">
-  **Prerequisite:** SCAL-P must be installed on your machine. See [Installation](/docs/getting-started/installation) if you haven't done this yet.
+  **Prerequisite:** SCAL-P must be installed on your machine. See
+  [Installation](/docs/getting-started/installation) if you haven't done this yet.
 </Callout>
 
 ## Run your first CI check
@@ -22,7 +23,8 @@ scalp ci
 ```
 
 <Callout type="info">
-  No config file needed. If you don't have a policy yet, SCAL-P uses a safe default: audit-only mode with warn enforcement.
+  No config file needed. If you don't have a policy yet, SCAL-P uses a safe default: audit-only mode
+  with warn enforcement.
 </Callout>
 
 You'll see output like:
@@ -102,7 +104,8 @@ scalp install --guarded
 This resolves dependencies, evaluates policy and trust scores, and blocks the install if violations are found. Only if everything passes does it proceed to install and hash every package directory.
 
 <Callout type="warning">
-  `--guarded` evaluates *before* install. If a violation is found and enforcement is `block`, the install never runs. No packages land in `node_modules`.
+  `--guarded` evaluates *before* install. If a violation is found and enforcement is `block`, the
+  install never runs. No packages land in `node_modules`.
 </Callout>
 
 ## What the directory looks like after your first run
@@ -124,7 +127,8 @@ my-project/
 ```
 
 <Callout type="info">
-  Commit `.scalp/policy.json` and `.scalp/policy.schema.json` to version control. Never commit `lockfile.json`, `cache/`, or `audit.log`.
+  Commit `.scalp/policy.json` and `.scalp/policy.schema.json` to version control. Never commit
+  `lockfile.json`, `cache/`, or `audit.log`.
 </Callout>
 
 ## What's next?

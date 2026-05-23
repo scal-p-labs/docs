@@ -14,12 +14,12 @@ scalp install [flags] [--] [pm args...]
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--pm` | auto-detected | Package manager: npm, pnpm, yarn, bun |
-| `--policy` | `.scalp/policy.json` | Path to policy file |
-| `--guarded` | false | Enforce policy and hash checks before install |
-| `--ci` | false | Force enforcement to `block` |
+| Flag        | Default              | Description                                   |
+| ----------- | -------------------- | --------------------------------------------- |
+| `--pm`      | auto-detected        | Package manager: npm, pnpm, yarn, bun         |
+| `--policy`  | `.scalp/policy.json` | Path to policy file                           |
+| `--guarded` | false                | Enforce policy and hash checks before install |
+| `--ci`      | false                | Force enforcement to `block`                  |
 
 ## Passthrough mode
 
@@ -37,7 +37,8 @@ Behind the scenes:
 4. Saves to `.scalp/lockfile.json`
 
 <Callout>
-  This mode is useful for gradually adopting SCAL-P. You get the lockfile and audit capability without any enforcement.
+  This mode is useful for gradually adopting SCAL-P. You get the lockfile and audit capability
+  without any enforcement.
 </Callout>
 
 ## Guarded mode
@@ -60,7 +61,8 @@ Flow:
 8. Hash each installed package → update `.scalp/lockfile.json`
 
 <Callout type="warning">
-  If enforcement is `block` and violations are found, **the install never runs**. No packages land in `node_modules`.
+  If enforcement is `block` and violations are found, **the install never runs**. No packages land
+  in `node_modules`.
 </Callout>
 
 ### Guarded install with a violation

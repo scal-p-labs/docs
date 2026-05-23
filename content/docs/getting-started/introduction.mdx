@@ -9,20 +9,22 @@ SCAL-P (**S**ecure **C**hain **A**ssurance **L**ayer for **P**ackages) is a secu
 Think of it as a **guard for your dependency graph**: you define rules, SCAL-P enforces them every time someone runs `npm install` (or `pnpm`, `yarn`, `bun`). No SaaS, no API keys, no remote calls — it runs entirely on your machine or CI.
 
 <Callout type="info">
-SCAL-P does **not** replace your package manager. It sits in front of it, reads the resolved dependency tree, evaluates policy, and either allows, warns, or blocks the operation. The package manager still does the actual install.
+  SCAL-P does **not** replace your package manager. It sits in front of it, reads the resolved
+  dependency tree, evaluates policy, and either allows, warns, or blocks the operation. The package
+  manager still does the actual install.
 </Callout>
 
 At a glance:
 
-| | |
-|---|---|
-| Package managers | npm, pnpm, yarn, bun |
-| Platforms | Linux, macOS, Windows |
-| Language | Go (zero external dependencies — stdlib only) |
-| License | Open source (Apache License 2.0) |
-| Mode | CLI tool — install as binary or `go install` |
-| SaaS required? | No. Fully self-contained, offline-capable. |
-| Lockfile | `.scalp/lockfile.json` — content-hash based, separate from `package-lock.json` |
+|                  |                                                                                |
+| ---------------- | ------------------------------------------------------------------------------ |
+| Package managers | npm, pnpm, yarn, bun                                                           |
+| Platforms        | Linux, macOS, Windows                                                          |
+| Language         | Go (zero external dependencies — stdlib only)                                  |
+| License          | Open source (Apache License 2.0)                                               |
+| Mode             | CLI tool — install as binary or `go install`                                   |
+| SaaS required?   | No. Fully self-contained, offline-capable.                                     |
+| Lockfile         | `.scalp/lockfile.json` — content-hash based, separate from `package-lock.json` |
 
 The core idea: **make every dependency auditable, traceable, and controllable by policy.** No implicit trust.
 
@@ -67,12 +69,12 @@ The npm ecosystem has over 2 million packages. That scale created a massive atta
 
 Existing tools address parts of the problem but leave gaps:
 
-| Tool | What it does | What it **doesn't** do |
-|------|-------------|------------------------|
-| `npm audit` | Detects known CVEs | No authorship verification, no post-install integrity |
-| Snyk / Dependabot | Alerts on vulnerabilities | Can't block unauthorized packages by policy |
-| `package-lock.json` | Pins exact versions | Doesn't prevent tampering or typosquatting |
-| npm provenance | Links build to repo | Optional adoption, no enforcement |
+| Tool                | What it does              | What it **doesn't** do                                |
+| ------------------- | ------------------------- | ----------------------------------------------------- |
+| `npm audit`         | Detects known CVEs        | No authorship verification, no post-install integrity |
+| Snyk / Dependabot   | Alerts on vulnerabilities | Can't block unauthorized packages by policy           |
+| `package-lock.json` | Pins exact versions       | Doesn't prevent tampering or typosquatting            |
+| npm provenance      | Links build to repo       | Optional adoption, no enforcement                     |
 
 ## How SCAL-P fixes it
 
@@ -80,32 +82,36 @@ SCAL-P reverses the default trust model. Modern package managers execute code be
 
 <Steps>
   <Step>
-    **Policy before trust** — evaluate allow/deny rules and trust scores against the resolved dependency tree *before* a single byte is installed.
+    **Policy before trust** — evaluate allow/deny rules and trust scores against the resolved
+    dependency tree *before* a single byte is installed.
   </Step>
   <Step>
-    **Hash after install** — once packages are installed, SHA-512 hash every package directory and store it in a separate lockfile (`.scalp/lockfile.json`).
+    **Hash after install** — once packages are installed, SHA-512 hash every package directory and
+    store it in a separate lockfile (`.scalp/lockfile.json`).
   </Step>
   <Step>
-    **Audit always** — every operation is logged to an append-only NDJSON audit log. You can always see what happened and why.
+    **Audit always** — every operation is logged to an append-only NDJSON audit log. You can always
+    see what happened and why.
   </Step>
   <Step>
-    **CI enforcement** — `scalp ci` wraps everything into a single command: resolve, evaluate, block, install, audit, report. One exit code.
+    **CI enforcement** — `scalp ci` wraps everything into a single command: resolve, evaluate,
+    block, install, audit, report. One exit code.
   </Step>
 </Steps>
 
 ## Threat coverage
 
-| Threat | How SCAL-P detects it |
-|--------|----------------------|
-| Compromised maintainer account | Hash mismatch against lockfile on `audit` |
-| Protestware / sabotage | Post-install hash audit catches modified files |
-| Malicious new version | Blocked by policy if not in allowlist |
-| Transitive supply chain | Recursive tree evaluation with `max_depth` limits |
-| Low-quality packages | Trust score < `min_score` triggers violation |
-| Release artifact tampering | `scalp verify` checks binary SHA-512 against checksums |
-| Staged package tampering | `scalp stage verify` computes tarball hash and extracts identity |
-| Staged package identity bypass | Package name extracted from tarball contents — not from user input |
-| Staged package denylist evasion | Denylist checked against actual tarball contents |
+| Threat                          | How SCAL-P detects it                                              |
+| ------------------------------- | ------------------------------------------------------------------ |
+| Compromised maintainer account  | Hash mismatch against lockfile on `audit`                          |
+| Protestware / sabotage          | Post-install hash audit catches modified files                     |
+| Malicious new version           | Blocked by policy if not in allowlist                              |
+| Transitive supply chain         | Recursive tree evaluation with `max_depth` limits                  |
+| Low-quality packages            | Trust score < `min_score` triggers violation                       |
+| Release artifact tampering      | `scalp verify` checks binary SHA-512 against checksums             |
+| Staged package tampering        | `scalp stage verify` computes tarball hash and extracts identity   |
+| Staged package identity bypass  | Package name extracted from tarball contents — not from user input |
+| Staged package denylist evasion | Denylist checked against actual tarball contents                   |
 
 ## Design principles
 
@@ -129,7 +135,6 @@ SCAL-P reverses the default trust model. Modern package managers execute code be
 - **You need zero overhead in local development** — same as any security tool. Run `scalp install` without `--guarded` for transparent passthrough, or skip it entirely in dev.
 - **Your project has no lockfile or policy** — SCAL-P works fine (allow + warn by default), but you'll get the most value with a policy configured.
 - **You already use a different lockfile format** — SCAL-P's `.scalp/lockfile.json` is complementary to `package-lock.json`, not a replacement.
-
 
 ## What's next?
 

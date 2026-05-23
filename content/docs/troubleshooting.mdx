@@ -18,6 +18,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     scalp ci --pm npm
     scalp ci --pm pnpm
     ```
+
   </Accordion>
 
   <Accordion title="No lockfile found">
@@ -38,6 +39,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     ```
 
     Then run SCAL-P again.
+
   </Accordion>
 
   <Accordion title="yarn v1 (Classic) not supported">
@@ -53,6 +55,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     npm install
     scalp ci --pm npm
     ```
+
   </Accordion>
 
   <Accordion title="Binary download failed (GitHub error)">
@@ -66,6 +69,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     **Fix:** download manually from the [releases page](https://github.com/scal-p-labs/SCAL-P/releases) and place `scalp` in your PATH.
 
     The install script checks for this via magic bytes and rejects HTML responses automatically.
+
   </Accordion>
 
   <Accordion title="Checksum verification failed">
@@ -83,6 +87,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     - The release checksums were regenerated (check the release page)
 
     **Fix:** download again and verify. If it persists, [file an issue](https://github.com/scal-p-labs/SCAL-P/issues).
+
   </Accordion>
 
   <Accordion title="Trust score network timeout">
@@ -95,6 +100,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     ```
 
     This is **not a failure** — trust scores degrade gracefully (half points for unknown data). The command continues normally. Cached data is used when available.
+
   </Accordion>
 
   <Accordion title="Node_modules not found during audit">
@@ -110,6 +116,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     npm install
     scalp audit
     ```
+
   </Accordion>
 
   <Accordion title="Policy file parse error">
@@ -128,6 +135,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     ```bash
     python3 -m json.tool .scalp/policy.json
     ```
+
   </Accordion>
 
   <Accordion title="Install blocked but no violations shown">
@@ -139,6 +147,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     This usually means the install was blocked by enforcement but the log level is set to `log` (silent). Check `.scalp/audit.log` and `.scalp/ci-report.json` for details.
 
     **Fix:** set `on_violation` to `warn` or `block` in your policy to see output.
+
   </Accordion>
 
   <Accordion title="Exit code 1 with no error message">
@@ -151,6 +160,7 @@ description: Common errors, their causes, and how to fix them — lockfile issue
     ```
 
     This enables the Go standard library's slog output with file and line numbers.
+
   </Accordion>
 </Accordions>
 

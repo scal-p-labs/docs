@@ -14,9 +14,9 @@ scalp init [--minimal | --strict]
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
-| `--minimal` | Create a bare skeleton policy (version only, no trust or enforcement rules) |
+| Flag        | Description                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `--minimal` | Create a bare skeleton policy (version only, no trust or enforcement rules)                                                           |
 | `--strict`  | Create a hardcore policy with `denylist` mode, `min_score: 60`, `require_hash: true`, `block` enforcement, and `guarded` default mode |
 
 ## Default
@@ -35,7 +35,8 @@ Without flags, `scalp init` writes the safe default policy: `audit-only` trust m
 ```
 
 <Callout type="info">
-The default policy is permissive by design. It logs violations as warnings but never blocks. Tighten it gradually as you adopt SCAL-P — see [Migration Guide](/docs/guides/migration).
+  The default policy is permissive by design. It logs violations as warnings but never blocks.
+  Tighten it gradually as you adopt SCAL-P — see [Migration Guide](/docs/guides/migration).
 </Callout>
 
 ## Minimal
@@ -100,11 +101,11 @@ Writes a production-hardened policy with deny rules for packages with protestwar
 
 ## When to use each variant
 
-| Variant | Best for |
-|---------|----------|
-| Default | First-time users, evaluation, local dev |
+| Variant     | Best for                                                     |
+| ----------- | ------------------------------------------------------------ |
+| Default     | First-time users, evaluation, local dev                      |
 | `--minimal` | Users who want to hand-craft their policy from a blank slate |
-| `--strict` | Production services, CI enforcement, org-wide rollout |
+| `--strict`  | Production services, CI enforcement, org-wide rollout        |
 
 <Cards>
   <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />

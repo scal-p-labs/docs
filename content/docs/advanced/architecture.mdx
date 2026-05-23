@@ -29,7 +29,8 @@ internal/
 
 ## Data flow (guarded install)
 
-<Mermaid chart={`
+<Mermaid
+  chart={`
 flowchart TD
   A["CLI<br/>scalp install --guarded"]
   A --> B["1. Load policy"]
@@ -42,11 +43,13 @@ flowchart TD
   H --> I["8. Get dependency tree<br/>adapter.GetTree(ctx)<br/>→ DependencyTree"]
   I --> J["9. Hash sync<br/>hash.Dir() for each package<br/>→ .scalp/lockfile.json"]
   J --> K["10. Audit log<br/>→ .scalp/audit.log (NDJSON)"]
-`} />
+`}
+/>
 
 ## Data flow (stage verify)
 
-<Mermaid chart={`
+<Mermaid
+  chart={`
 flowchart TD
   A["CLI<br/>scalp stage verify --stage-id <pkg>"]
   A --> B["1. Load policy"]
@@ -57,7 +60,8 @@ flowchart TD
   F --> G["6. Denylist check<br/>internal/policy/<br/>Check against deny rules"]
   G --> H["7. SARIF output<br/>internal/reporter/"]
   H --> I["8. Enforce<br/>internal/policy/"]
-`} />
+`}
+/>
 
 ## Component diagram
 
@@ -72,12 +76,12 @@ flowchart TD
   HASH["hash<br/>SHA-512<br/>.scalp/lockfile.json"]
   AUDIT["audit + reporter<br/>NDJSON + JSON + Markdown + SARIF"]
 
-  CLI --> PM
-  PM --> ADAPTER
-  POLICY --> EVAL
-  EVAL --> ENF
-  ENF -- if passed --> HASH
-  HASH --> AUDIT
+CLI --> PM
+PM --> ADAPTER
+POLICY --> EVAL
+EVAL --> ENF
+ENF -- if passed --> HASH
+HASH --> AUDIT
 `} />
 
 ## Package manager adapter
@@ -109,27 +113,28 @@ flowchart TD
   B --> C["Fetch CVEs<br/>npm audit --json"]
   C --> D{"For each PackageNode"}
 
-  D --> E["Hash verified?<br/>30 pts / 0 pts"]
-  D --> F["Version >= 1.0.0?<br/>15 pts / 0 pts"]
-  D --> G["Downloads<br/>0–20 pts"]
-  D --> H["CVEs<br/>15 pts / 0 pts"]
+D --> E["Hash verified?<br/>30 pts / 0 pts"]
+D --> F["Version >= 1.0.0?<br/>15 pts / 0 pts"]
+D --> G["Downloads<br/>0–20 pts"]
+D --> H["CVEs<br/>15 pts / 0 pts"]
 
-  E --> I{"Score < min_score?"}
-  F --> I
-  G --> I
-  H --> I
+E --> I{"Score < min_score?"}
+F --> I
+G --> I
+H --> I
 
-  I -- yes --> J["violation"]
-  I -- no --> K["Next PackageNode"]
+I -- yes --> J["violation"]
+I -- no --> K["Next PackageNode"]
 
-  J --> L["Update cache"]
-  K --> L
-  L --> M["Save cache<br/>.scalp/cache/trust.json"]
+J --> L["Update cache"]
+K --> L
+L --> M["Save cache<br/>.scalp/cache/trust.json"]
 `} />
 
 ## CI command flow
 
-<Mermaid chart={`
+<Mermaid
+  chart={`
 flowchart TD
   A["scalp ci"]
   A --> B["1. Load policy"]
@@ -143,7 +148,8 @@ flowchart TD
   I --> J["8. Verify against tree<br/>(detect tampering)"]
   J --> K["9. Write report + optional SARIF"]
   K --> L["10. Exit 0"]
-`} />
+`}
+/>
 
 ## File layout
 

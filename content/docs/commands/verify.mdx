@@ -28,9 +28,9 @@ sha512-7f8e9d0c1b2a...  scalp_darwin_amd64.tar.gz
 
 ### Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--output` | stdout | Write checksums to file instead of stdout |
+| Flag       | Default | Description                               |
+| ---------- | ------- | ----------------------------------------- |
+| `--output` | stdout  | Write checksums to file instead of stdout |
 
 Write to file:
 
@@ -66,20 +66,20 @@ hash_mismatch: expected sha512-a1b2c3d4e5f6..., got sha512-7f8e9d0c1b2a...
 
 ### Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--artifact` | required | Path to the downloaded release artifact |
-| `--checksum` | required | Path to the checksums file |
-| `--policy` | `.scalp/policy.json` | Policy controlling enforcement |
-| `--ci` | false | Override enforcement to `block` |
+| Flag         | Default              | Description                             |
+| ------------ | -------------------- | --------------------------------------- |
+| `--artifact` | required             | Path to the downloaded release artifact |
+| `--checksum` | required             | Path to the checksums file              |
+| `--policy`   | `.scalp/policy.json` | Policy controlling enforcement          |
+| `--ci`       | false                | Override enforcement to `block`         |
 
 ### Enforcement
 
-| Enforcement | Hash match | Hash mismatch |
-|-------------|-----------|---------------|
-| `warn` (default) | exit 0 | logged, exit 0 |
-| `block` | exit 0 | exit 1 |
-| `log` | exit 0 | silent, exit 0 |
+| Enforcement      | Hash match | Hash mismatch  |
+| ---------------- | ---------- | -------------- |
+| `warn` (default) | exit 0     | logged, exit 0 |
+| `block`          | exit 0     | exit 1         |
+| `log`            | exit 0     | silent, exit 0 |
 
 With `--ci`, enforcement is forced to `block`.
 
@@ -103,7 +103,13 @@ hash_mismatch: expected sha512-a1b2..., got sha512-7f8e...
 Every `scalp verify` call produces one audit event:
 
 ```json
-{"ts":"2026-05-22T12:00:00Z","event":"binary_verify","pkg":"scalp_linux_amd64.tar.gz","status":"verified","hash_match":true}
+{
+  "ts": "2026-05-22T12:00:00Z",
+  "event": "binary_verify",
+  "pkg": "scalp_linux_amd64.tar.gz",
+  "status": "verified",
+  "hash_match": true
+}
 ```
 
 Appended to `.scalp/audit.log` alongside all other events.

@@ -43,11 +43,11 @@ Run `scalp ci` again. You'll see warnings for any package scoring below 50.
 
 Review the violations — decide what to do:
 
-| Situation | Action |
-|-----------|--------|
+| Situation                                             | Action                               |
+| ----------------------------------------------------- | ------------------------------------ |
 | Legitimate low-score package (e.g., old but critical) | Adjust `min_score` or add to `allow` |
-| Suspicious package | Investigate, add to `deny` |
-| New/unpopular package from trusted author | Relax score or add to allowlist |
+| Suspicious package                                    | Investigate, add to `deny`           |
+| New/unpopular package from trusted author             | Relax score or add to allowlist      |
 
 ## Phase 3: Add allow/deny rules
 
@@ -61,10 +61,7 @@ Refine your policy with package rules:
     "min_score": 50
   },
   "packages": {
-    "deny": [
-      { "pattern": "*-free" },
-      { "pattern": "*debug*" }
-    ]
+    "deny": [{ "pattern": "*-free" }, { "pattern": "*debug*" }]
   },
   "enforcement": { "on_violation": "warn" }
 }

@@ -1,10 +1,5 @@
 {
-  "pages": [
-    "introduction",
-    "installation",
-    "quick-start",
-    "comparison"
-  ],
+  "pages": ["introduction", "installation", "quick-start", "comparison"],
   "title": "Getting Started",
   "icon": "Rocket",
   "defaultOpen": true

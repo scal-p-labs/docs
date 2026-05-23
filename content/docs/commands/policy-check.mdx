@@ -14,11 +14,11 @@ scalp policy check [flags]
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--pm` | auto-detected | Package manager override |
-| `--policy` | `.scalp/policy.json` | Policy path |
-| `--ci` | false | Force enforcement to `block` |
+| Flag       | Default              | Description                  |
+| ---------- | -------------------- | ---------------------------- |
+| `--pm`     | auto-detected        | Package manager override     |
+| `--policy` | `.scalp/policy.json` | Policy path                  |
+| `--ci`     | false                | Force enforcement to `block` |
 
 ## How it works
 
@@ -67,12 +67,12 @@ scalp policy check --policy custom-policy.json
 
 ## Why use `policy check` instead of `ci`?
 
-| Situation | Use |
-|-----------|-----|
-| Quick feedback on policy rules | `policy check` |
-| Full verification (install + audit) | `ci` |
-| Before merging a PR | `policy check --ci` |
-| Before deploying | `ci` |
+| Situation                           | Use                 |
+| ----------------------------------- | ------------------- |
+| Quick feedback on policy rules      | `policy check`      |
+| Full verification (install + audit) | `ci`                |
+| Before merging a PR                 | `policy check --ci` |
+| Before deploying                    | `ci`                |
 
 `policy check` is faster because it skips the install and hash sync. Use it when you want policy feedback in seconds, not minutes.
 

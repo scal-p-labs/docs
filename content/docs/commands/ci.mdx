@@ -14,29 +14,27 @@ scalp ci [flags]
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--pm` | auto-detected | Package manager override |
-| `--policy` | `.scalp/policy.json` | Policy path |
-| `--output` | `.scalp/ci-report.json` | JSON report path. Use `-` for stdout |
-| `--pr-context` | `fork` | PR context: `fork` or `internal` |
-| `--allow-scripts` | false | Allow install scripts (internal only) |
-| `--sarif` | "" | Path for SARIF 2.1.0 report |
+| Flag              | Default                 | Description                           |
+| ----------------- | ----------------------- | ------------------------------------- |
+| `--pm`            | auto-detected           | Package manager override              |
+| `--policy`        | `.scalp/policy.json`    | Policy path                           |
+| `--output`        | `.scalp/ci-report.json` | JSON report path. Use `-` for stdout  |
+| `--pr-context`    | `fork`                  | PR context: `fork` or `internal`      |
+| `--allow-scripts` | false                   | Allow install scripts (internal only) |
+| `--sarif`         | ""                      | Path for SARIF 2.1.0 report           |
 
 ## How it works
 
 <Steps>
+  <Step>**Load policy** — reads `.scalp/policy.json` or uses defaults</Step>
+  <Step>**Resolve** — runs the package manager's lockfile-only resolve (no install)</Step>
   <Step>
-    **Load policy** — reads `.scalp/policy.json` or uses defaults
+    **Parse and evaluate** — parses the lockfile, evaluates every package against policy rules and
+    trust scores
   </Step>
   <Step>
-    **Resolve** — runs the package manager's lockfile-only resolve (no install)
-  </Step>
-  <Step>
-    **Parse and evaluate** — parses the lockfile, evaluates every package against policy rules and trust scores
-  </Step>
-  <Step>
-    **Block if violations** — writes the JSON report, annotates the PR (GitHub Actions), and exits 1. Never installs.
+    **Block if violations** — writes the JSON report, annotates the PR (GitHub Actions), and exits
+    1. Never installs.
   </Step>
   <Step>
     **Install** — runs `npm install` (or equivalent) with `--ignore-scripts` in fork context
@@ -44,12 +42,8 @@ scalp ci [flags]
   <Step>
     **Hash sync** — hashes every installed package directory, saves to `.scalp/lockfile.json`
   </Step>
-  <Step>
-    **Audit** — verifies lockfile hashes against `node_modules`
-  </Step>
-  <Step>
-    **Report** — writes JSON report (+ optional SARIF), exits 0 or 1
-  </Step>
+  <Step>**Audit** — verifies lockfile hashes against `node_modules`</Step>
+  <Step>**Report** — writes JSON report (+ optional SARIF), exits 0 or 1</Step>
 </Steps>
 
 ## Basic usage
@@ -143,7 +137,8 @@ scalp ci --pr-context internal --allow-scripts
 ```
 
 <Callout type="warning">
-  Allowing install scripts means packages can run arbitrary code during install. Only use this for trusted projects where you know exactly which packages need build steps.
+  Allowing install scripts means packages can run arbitrary code during install. Only use this for
+  trusted projects where you know exactly which packages need build steps.
 </Callout>
 
 ## Why separate from `install --guarded`?

@@ -73,7 +73,8 @@ ci failed: [{"PackageID":"colors@1.4.2","Reason":"denylist","Rule":"denylist"}]
 The install step never ran — no tarballs were downloaded.
 
 <Callout type="warning">
-Without SCAL-P, `npm install colors` would silently succeed. The malicious `node_modules/colors` would be deployed to production. SCAL-P caught it before it reached disk.
+  Without SCAL-P, `npm install colors` would silently succeed. The malicious `node_modules/colors`
+  would be deployed to production. SCAL-P caught it before it reached disk.
 </Callout>
 
 ## 4. Create a real policy
@@ -95,11 +96,7 @@ To manually replace `.scalp/policy.json` with a custom policy:
       { "name": "express", "versions": "^4.18.0" },
       { "name": "body-parser", "versions": "^1.20.0" }
     ],
-    "deny": [
-      "colors",
-      "faker",
-      "node-ipc"
-    ]
+    "deny": ["colors", "faker", "node-ipc"]
   },
   "transitive": {
     "max_depth": 3,
@@ -121,7 +118,8 @@ git commit -m "chore: add SCAL-P policy and initial lockfile"
 ```
 
 <Callout type="info">
-Committing `.scalp/lockfile.json` gives you a versioned integrity baseline. See [Security Best Practices](/docs/guides/security-best-practices) for the tradeoffs.
+  Committing `.scalp/lockfile.json` gives you a versioned integrity baseline. See [Security Best
+  Practices](/docs/guides/security-best-practices) for the tradeoffs.
 </Callout>
 
 ## 5. Review the audit log
@@ -133,7 +131,14 @@ grep '"status":"blocked"' .scalp/audit.log
 ```
 
 ```json
-{"time":"2026-05-22T10:05:00Z","action":"policy_evaluate","status":"blocked","violations":2,"pkg":"colors@1.4.2","reason":"denylist + no_hash"}
+{
+  "time": "2026-05-22T10:05:00Z",
+  "action": "policy_evaluate",
+  "status": "blocked",
+  "violations": 2,
+  "pkg": "colors@1.4.2",
+  "reason": "denylist + no_hash"
+}
 ```
 
 Search for specific packages:
@@ -143,7 +148,13 @@ grep '"pkg":"body-parser"' .scalp/audit.log
 ```
 
 ```json
-{"time":"2026-05-22T10:00:00Z","action":"hash_sync","status":"ok","pkg":"body-parser@1.20.3","hash_match":true}
+{
+  "time": "2026-05-22T10:00:00Z",
+  "action": "hash_sync",
+  "status": "ok",
+  "pkg": "body-parser@1.20.3",
+  "hash_match": true
+}
 ```
 
 Full compliance trail — no external service required.
@@ -207,6 +218,7 @@ sequenceDiagram
         Action->>GH: Upload SARIF
         GH->>Dev: PR check ✅
     end
+
 `} />
 
 ## 7. Simulate a fork PR attack
@@ -245,16 +257,16 @@ If any package was tampered with (malicious commit, compromised CI runner, manua
 
 ## Recap
 
-| Step | What you did | SCAL-P command |
-|---|---|---|
-| 1 | Initialize project + install deps | `npm install`, `scalp init` |
-| 2 | First guarded run | `scalp ci` |
-| 3 | Catch malicious dependency | `scalp ci` (blocked) |
-| 4 | Configure policy | Edit `.scalp/policy.json` |
-| 5 | Review audit log | `grep '"status":"blocked"' .scalp/audit.log` |
-| 6 | Set up CI | `.github/workflows/scalp-ci.yml` |
-| 7 | Fork PR simulation | `pr-context: fork` |
-| 8 | Verify integrity baseline | `scalp audit --ci` |
+| Step | What you did                      | SCAL-P command                               |
+| ---- | --------------------------------- | -------------------------------------------- |
+| 1    | Initialize project + install deps | `npm install`, `scalp init`                  |
+| 2    | First guarded run                 | `scalp ci`                                   |
+| 3    | Catch malicious dependency        | `scalp ci` (blocked)                         |
+| 4    | Configure policy                  | Edit `.scalp/policy.json`                    |
+| 5    | Review audit log                  | `grep '"status":"blocked"' .scalp/audit.log` |
+| 6    | Set up CI                         | `.github/workflows/scalp-ci.yml`             |
+| 7    | Fork PR simulation                | `pr-context: fork`                           |
+| 8    | Verify integrity baseline         | `scalp audit --ci`                           |
 
 <Cards>
   <Card title="Quick Start" href="/docs/getting-started/quick-start" />

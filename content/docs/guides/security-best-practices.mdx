@@ -8,15 +8,15 @@ description: Recommended practices for policy management, version control, CI en
 
 Not everything in `.scalp/` belongs in git. Here's the breakdown:
 
-| File | Commit? | Reason |
-|------|---------|--------|
-| `.scalp/policy.json` | ✅ Yes | Your security policy — belongs in version control |
-| `.scalp/policy.schema.json` | ✅ Yes | JSON Schema for editor autocomplete — commit once |
-| `.scalp/lockfile.json` | ✅ Recommended | Integrity snapshot — baseline for cross-session tampering detection |
-| `.scalp/cache/` | ❌ No | Trust score cache (download counts, CVEs) — ephemeral |
-| `.scalp/audit.log` | ❌ No | Append-only event log — machine-specific |
-| `.scalp/ci-report.json` | ❌ No | CI report output — generated per run |
-| `.scalp/*.sarif` | ❌ No | SARIF reports — generated per run |
+| File                        | Commit?        | Reason                                                              |
+| --------------------------- | -------------- | ------------------------------------------------------------------- |
+| `.scalp/policy.json`        | ✅ Yes         | Your security policy — belongs in version control                   |
+| `.scalp/policy.schema.json` | ✅ Yes         | JSON Schema for editor autocomplete — commit once                   |
+| `.scalp/lockfile.json`      | ✅ Recommended | Integrity snapshot — baseline for cross-session tampering detection |
+| `.scalp/cache/`             | ❌ No          | Trust score cache (download counts, CVEs) — ephemeral               |
+| `.scalp/audit.log`          | ❌ No          | Append-only event log — machine-specific                            |
+| `.scalp/ci-report.json`     | ❌ No          | CI report output — generated per run                                |
+| `.scalp/*.sarif`            | ❌ No          | SARIF reports — generated per run                                   |
 
 <Callout type="info">
 **Should you commit `.scalp/lockfile.json`?** It depends on your threat model.
@@ -24,6 +24,7 @@ Not everything in `.scalp/` belongs in git. Here's the breakdown:
 Committing it gives you a **versioned integrity baseline**: if a malicious dependency is introduced in a PR, `scalp audit` will detect the hash mismatch when the branch is compared against `main`. This is the strongest tamper-detection SCAL-P offers.
 
 The tradeoff: packages with platform-specific binaries may produce different hashes across OSs (e.g., macOS CI vs Linux CI). In practice, pick one platform as canonical (usually your Linux CI runner) and commit its lockfile. Hash mismatches on other platforms are benign — they don't indicate an attack.
+
 </Callout>
 
 ### Committing lockfile (maximum security) — recommended

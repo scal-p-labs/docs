@@ -8,24 +8,24 @@ A package with 1M downloads/week and no known CVEs should not be treated the sam
 
 ## Quick reference
 
-| Factor | Max | Thresholds |
-|--------|-----|------------|
-| Hash verified | 30 | Has lockfile entry = 30, missing = 0 |
-| Version maturity | 15 | major >= 1 = 15, major < 1 = 0 |
-| Weekly downloads | 20 | 100K+ = 20, 10K+ = 15, 1K+ = 10, 100+ = 5, under 100 = 0 |
-| No active CVEs | 15 | Audit clean = 15, has CVEs = 0, unknown = 7 |
-| **Total** | **80** | Offline-safe: network failure = half points |
+| Factor           | Max    | Thresholds                                               |
+| ---------------- | ------ | -------------------------------------------------------- |
+| Hash verified    | 30     | Has lockfile entry = 30, missing = 0                     |
+| Version maturity | 15     | major >= 1 = 15, major < 1 = 0                           |
+| Weekly downloads | 20     | 100K+ = 20, 10K+ = 15, 1K+ = 10, 100+ = 5, under 100 = 0 |
+| No active CVEs   | 15     | Audit clean = 15, has CVEs = 0, unknown = 7              |
+| **Total**        | **80** | Offline-safe: network failure = half points              |
 
 ## What it is
 
 A deterministic score (0–80) for each dependency, computed from four factors:
 
-| Factor | Max pts | Source | Works offline? |
-|--------|---------|--------|----------------|
-| Hash verified | 30 | `.scalp/lockfile.json` | yes |
-| Version >= 1.0.0 | 15 | lockfile | yes |
-| Weekly downloads | 20 | `api.npmjs.org` | degraded (10 pts) |
-| No active CVEs | 15 | `npm audit --json` | degraded (7 pts) |
+| Factor           | Max pts | Source                 | Works offline?    |
+| ---------------- | ------- | ---------------------- | ----------------- |
+| Hash verified    | 30      | `.scalp/lockfile.json` | yes               |
+| Version >= 1.0.0 | 15      | lockfile               | yes               |
+| Weekly downloads | 20      | `api.npmjs.org`        | degraded (10 pts) |
+| No active CVEs   | 15      | `npm audit --json`     | degraded (7 pts)  |
 
 If the score is below `trust.min_score` in your policy, it's a violation — same as a denied package.
 
@@ -37,10 +37,10 @@ This is the key distinction that makes the score fair when offline.
 
 **Bad** = we checked and the data says it's bad. You get **0**.
 
-| Factor | Unknown (offline/no data) | Bad (checked & failed) |
-|--------|---------------------------|----------------------|
-| Downloads | 10 pts | 0 pts (< 100/week) |
-| CVEs | 7 pts | 0 pts (open CVEs found) |
+| Factor    | Unknown (offline/no data) | Bad (checked & failed)  |
+| --------- | ------------------------- | ----------------------- |
+| Downloads | 10 pts                    | 0 pts (< 100/week)      |
+| CVEs      | 7 pts                     | 0 pts (open CVEs found) |
 
 Download example:
 
@@ -63,16 +63,17 @@ CVE example:
 When `require_hash` is true, any package that lacks a lockfile integrity entry is an **automatic violation** — regardless of total score. The violation says `hash_required` and the package is skipped from trust scoring entirely.
 
 <Callout type="warning">
-  This is your "supply chain minimum" switch. If a package wasn't installed through SCAL-P's guarded flow (or was tampered with after), you know immediately — not just see a lower score.
+  This is your "supply chain minimum" switch. If a package wasn't installed through SCAL-P's guarded
+  flow (or was tampered with after), you know immediately — not just see a lower score.
 </Callout>
 
 Both `require_hash` and `min_score` can be active at the same time:
 
-| Package state | Result |
-|--------------|--------|
-| Missing hash | Violation (`hash_required`) |
+| Package state         | Result                            |
+| --------------------- | --------------------------------- |
+| Missing hash          | Violation (`hash_required`)       |
 | Has hash, score 30/50 | Violation (`trust_score_too_low`) |
-| Has hash, score 65/50 | Passes |
+| Has hash, score 65/50 | Passes                            |
 
 ## The four factors in detail
 
@@ -89,23 +90,23 @@ This rewards packages that were installed through SCAL-P's guarded flow. Manual 
 Parsing: split on ".", parse first component. `^0.5.0`, `~1.2.3`, `v2.0` all work.
 
 | Version | Points |
-|---------|--------|
-| 1.0.0 | 15 |
-| 2.3.4 | 15 |
-| 0.5.0 | 0 |
-| 0.0.1 | 0 |
+| ------- | ------ |
+| 1.0.0   | 15     |
+| 2.3.4   | 15     |
+| 0.5.0   | 0      |
+| 0.0.1   | 0      |
 
 ### Weekly downloads (0–20 pts)
 
 Thresholds are logarithmic:
 
 | Downloads/week | Points |
-|----------------|--------|
-| < 100 | 0 |
-| 100–999 | 5 |
-| 1,000–9,999 | 10 |
-| 10,000–99,999 | 15 |
-| 100,000+ | 20 |
+| -------------- | ------ |
+| < 100          | 0      |
+| 100–999        | 5      |
+| 1,000–9,999    | 10     |
+| 10,000–99,999  | 15     |
+| 100,000+       | 20     |
 
 Fetched from `GET https://api.npmjs.org/downloads/point/last-week/{name}`. Cached in `.scalp/cache/trust.json` for 7 days.
 
@@ -118,10 +119,12 @@ HTTP call has a 10s timeout. If it fails, the scorer moves on — no blocking.
 Runs `npm audit --json` once per evaluation, maps vulnerabilities by package **and version**.
 
 **npm audit succeeded:**
+
 - Package has open CVEs → 0 pts
 - Package has no CVEs → 15 pts
 
 **npm audit failed (pre-install, no lockfile, etc.):**
+
 - Cache has a CVE entry for this specific version → 0 pts
 - Cache has a clean entry for this version → 15 pts
 - No cache for this version → **7 pts** (unknown)

@@ -27,13 +27,14 @@ Flow:
 
 `--pr-context` tells `scalp ci` where the code is coming from:
 
-| Context | `require_hash` | Install scripts | Use case |
-|---------|----------------|----------------|----------|
-| `fork` (default) | forced on | blocked | PRs from untrusted forks |
-| `internal` | as configured | blocked unless `--allow-scripts` | PRs from team members |
+| Context          | `require_hash` | Install scripts                  | Use case                 |
+| ---------------- | -------------- | -------------------------------- | ------------------------ |
+| `fork` (default) | forced on      | blocked                          | PRs from untrusted forks |
+| `internal`       | as configured  | blocked unless `--allow-scripts` | PRs from team members    |
 
 <Callout type="warning">
-  Fork mode overrides your policy's `require_hash` to `true`. Every package must have a lockfile integrity entry. A fork could have tampered with the lockfile, so this is non-negotiable.
+  Fork mode overrides your policy's `require_hash` to `true`. Every package must have a lockfile
+  integrity entry. A fork could have tampered with the lockfile, so this is non-negotiable.
 </Callout>
 
 ## Install scripts: blocked by default
@@ -49,15 +50,16 @@ scalp ci --pr-context internal --allow-scripts
 ```
 
 <Callout type="info">
-  `--allow-scripts` without `--pr-context internal` is still blocked. You must explicitly opt into both.
+  `--allow-scripts` without `--pr-context internal` is still blocked. You must explicitly opt into
+  both.
 </Callout>
 
 ## Exit codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Everything passed — policy, trust, hashes |
-| 1 | Violations found (or something failed) |
+| Code | Meaning                                   |
+| ---- | ----------------------------------------- |
+| 0    | Everything passed — policy, trust, hashes |
+| 1    | Violations found (or something failed)    |
 
 No other exit codes.
 
@@ -66,7 +68,8 @@ No other exit codes.
 The easiest way is using the official [SCAL-P GitHub Action](https://github.com/scal-p-labs/scalp-action). It downloads the correct binary for your platform, runs `scalp ci`, and produces reports.
 
 <Callout type="info">
-  Always pin the action to a specific commit SHA for supply chain security — tags are mutable, SHAs are not.
+  Always pin the action to a specific commit SHA for supply chain security — tags are mutable, SHAs
+  are not.
 </Callout>
 
 ### Basic workflow
@@ -129,7 +132,9 @@ jobs:
 ```
 
 <Callout type="info">
-  PR annotations are automatically emitted via `::error::` / `::warning::` workflow commands when `GITHUB_ACTIONS=true`. Violations appear inline on the PR diff. The action also sets the `status` output to `pass` or `fail` for conditional steps.
+  PR annotations are automatically emitted via `::error::` / `::warning::` workflow commands when
+  `GITHUB_ACTIONS=true`. Violations appear inline on the PR diff. The action also sets the `status`
+  output to `pass` or `fail` for conditional steps.
 </Callout>
 
 ### Fork vs internal PR context
@@ -180,6 +185,7 @@ jobs:
               pm: ${{ matrix.pm }}
               sarif: .scalp/${{ matrix.pm }}-report.sarif
     ```
+
   </Tab>
   <Tab>
     ```yaml
@@ -213,6 +219,7 @@ jobs:
               pm: ${{ matrix.pm }}
               sarif: .scalp/${{ matrix.pm }}-report.sarif
     ```
+
   </Tab>
 </Tabs>
 
@@ -247,7 +254,8 @@ scalp audit --ci --report audit-report.md
 This skips the install and only checks hash integrity. Useful as a quick pre-merge check.
 
 <Callout type="info">
-  If you're using the GitHub Action, audit-only isn't a built-in mode — but you can run it as a CLI step after the action, or use the action with `scalp ci` (which includes audit).
+  If you're using the GitHub Action, audit-only isn't a built-in mode — but you can run it as a CLI
+  step after the action, or use the action with `scalp ci` (which includes audit).
 </Callout>
 
 ## CI with policy check only

@@ -14,14 +14,14 @@ scalp audit [flags]
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--pm` | auto-detected | Package manager override |
-| `--policy` | `.scalp/policy.json` | Policy path |
-| `--ci` | false | Force enforcement to `block` |
-| `--report` | "" | Report output path (`.md`, `.sarif`). Use `-` for stdout |
-| `--artifact` | "" | Binary artifact to verify alongside packages |
-| `--checksum` | "" | Checksums file for binary verification |
+| Flag         | Default              | Description                                              |
+| ------------ | -------------------- | -------------------------------------------------------- |
+| `--pm`       | auto-detected        | Package manager override                                 |
+| `--policy`   | `.scalp/policy.json` | Policy path                                              |
+| `--ci`       | false                | Force enforcement to `block`                             |
+| `--report`   | ""                   | Report output path (`.md`, `.sarif`). Use `-` for stdout |
+| `--artifact` | ""                   | Binary artifact to verify alongside packages             |
+| `--checksum` | ""                   | Checksums file for binary verification                   |
 
 ## Basic audit
 
@@ -71,7 +71,8 @@ policy violations detected:
 ```
 
 <Callout type="warning">
-  This also detects files added or removed from a package directory. If a postinstall script creates a new file inside a package, the hash changes and `scalp audit` flags it.
+  This also detects files added or removed from a package directory. If a postinstall script creates
+  a new file inside a package, the hash changes and `scalp audit` flags it.
 </Callout>
 
 ## Audit with report
@@ -89,6 +90,7 @@ scalp audit --report -
 ```
 
 The report includes:
+
 - Summary table (verified, mismatched, missing)
 - Per-package hash verification status
 - Trust scores with breakdown
