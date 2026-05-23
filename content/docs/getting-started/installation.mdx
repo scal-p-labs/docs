@@ -1,0 +1,116 @@
+---
+title: Install SCAL-P
+icon: Download
+description: Download the latest binary, build from source, or install via Go.
+---
+
+You have a few options to get SCAL-P on your machine.
+
+## Download a pre-built binary
+
+The easiest way. Grab the latest release from the [releases page](https://github.com/scal-p-labs/SCAL-P/releases).
+
+<Tabs items={["Linux", "macOS", "Windows"]}>
+  <Tab>
+    ```bash
+    curl -L https://github.com/scal-p-labs/SCAL-P/releases/latest/download/scalp_linux_amd64.tar.gz | tar xz
+    sudo mv scalp /usr/local/bin/
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    curl -L https://github.com/scal-p-labs/SCAL-P/releases/latest/download/scalp_darwin_amd64.tar.gz | tar xz
+    sudo mv scalp /usr/local/bin/
+    ```
+  </Tab>
+  <Tab>
+    Download `scalp_windows_amd64.zip` from the [releases page](https://github.com/scal-p-labs/SCAL-P/releases), extract, and add to your PATH.
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+  ARM64 builds are also available for Linux and macOS. Just replace `amd64` with `arm64` in the URL.
+</Callout>
+
+## Install via Go
+
+If you have Go 1.22+ installed:
+
+```bash
+go install github.com/scal-p-labs/SCAL-P/cmd/scalp@latest
+```
+
+<Callout type="info">
+  The binary is named `scalp` (no hyphen) regardless of installation method. The Go module path is `scal-p` (with hyphen), but the CLI command is always `scalp`.
+</Callout>
+
+## Build from source
+
+Requires Go 1.22+.
+
+```bash
+git clone https://github.com/scal-p-labs/SCAL-P
+cd SCAL-P
+make build
+```
+
+The binary lands at `.bin/scal-p`. Add it to your PATH or copy it:
+
+```bash
+sudo cp .bin/scal-p /usr/local/bin/
+```
+
+## Verify the installation
+
+```bash
+scalp version
+```
+
+You should see something like:
+
+```
+scalp dev (none) 2026-05-22T00:00:00Z
+```
+
+## Verify the binary integrity
+
+If you downloaded a release, you can verify the binary hasn't been tampered with. SCAL-P's release pipeline generates checksums for every artifact:
+
+```bash
+# Download the checksums file alongside the binary
+curl -L https://github.com/scal-p-labs/SCAL-P/releases/latest/download/checksums.txt > checksums.txt
+
+# Verify the binary
+scalp verify \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt \
+  --ci
+```
+
+<Callout type="info">
+  This is dogfooding — SCAL-P verifies its own releases using the exact same engine it uses to verify your npm packages.
+</Callout>
+
+## Package manager detection
+
+SCAL-P auto-detects your package manager from the lockfile:
+
+| Lockfile | Package manager |
+|----------|----------------|
+| `package-lock.json` | npm |
+| `pnpm-lock.yaml` | pnpm |
+| `yarn.lock` | yarn (Berry v2+) |
+| `bun.lock` / `bun.lockb` | bun |
+
+If you have multiple lockfiles or none, use `--pm` to specify:
+
+```bash
+scalp install --pm yarn --guarded
+```
+
+## What's next?
+
+<Cards>
+  <Card title="Quick Start" href="/docs/getting-started/quick-start" />
+  <Card title="CLI Commands" href="/docs/commands/install" />
+</Cards>

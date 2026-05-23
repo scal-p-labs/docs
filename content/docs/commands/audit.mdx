@@ -1,0 +1,146 @@
+---
+title: scalp audit
+icon: Search
+description: Validate SCAL-P lockfile hashes against node_modules, detect tampering, and generate reports.
+---
+
+Verifies that your installed packages match the expected hashes recorded in `.scalp/lockfile.json`. If someone or something modified a package after installation — malicious script, accidental edit, corrupted download — `scalp audit` catches it.
+
+## Usage
+
+```bash
+scalp audit [flags]
+```
+
+## Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--pm` | auto-detected | Package manager override |
+| `--policy` | `.scalp/policy.json` | Policy path |
+| `--ci` | false | Force enforcement to `block` |
+| `--report` | "" | Report output path (`.md`, `.sarif`). Use `-` for stdout |
+| `--artifact` | "" | Binary artifact to verify alongside packages |
+| `--checksum` | "" | Checksums file for binary verification |
+
+## Basic audit
+
+```bash
+scalp audit
+```
+
+On success:
+
+```
+INFO  audit passed: 142 verified, 0 mismatched, 0 missing
+```
+
+On tampering detected:
+
+```
+WARN  hash mismatch: lodash@4.17.21
+       expected: sha512-a1b2c3d4e5f6...
+       actual:   sha512-7f8e9d0c1b2a...
+
+WARN  audit failed: 141 verified, 1 mismatched, 0 missing
+```
+
+## Detecting tampering
+
+Here's a real scenario. You install lodash, then someone modifies a file:
+
+```bash
+# Install normally
+scalp install
+
+# Someone tampered with lodash
+echo "malicious code" >> node_modules/lodash/index.js
+
+# Audit catches it
+scalp audit
+```
+
+```
+WARN  hash mismatch: lodash@4.17.21
+       expected: sha512-a1b2c3d4e5f6...
+       actual:   sha512-7f8e9d0c1b2a...
+```
+
+<Callout type="warning">
+  This also detects files added or removed from a package directory. If a postinstall script creates a new file inside a package, the hash changes and `scalp audit` flags it.
+</Callout>
+
+## Audit with report
+
+Generate a Markdown report:
+
+```bash
+scalp audit --report audit-report.md
+```
+
+Write to stdout:
+
+```bash
+scalp audit --report -
+```
+
+The report includes:
+- Summary table (verified, mismatched, missing)
+- Per-package hash verification status
+- Trust scores with breakdown
+- CVE table
+- Policy JSON
+- All violations
+- Full event log
+
+## Audit + binary verify
+
+You can audit packages and verify a binary artifact in a single command:
+
+```bash
+scalp audit \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt \
+  --report audit-report.md
+```
+
+This runs both checks and produces one unified report with both results.
+
+## Audit in CI
+
+```bash
+scalp audit --ci
+```
+
+Forces enforcement to `block`. If any hash mismatch is found, exit code is 1.
+
+## Audit with enforcement
+
+Default enforcement is `warn` (print and continue). With `--ci` or `block` in policy:
+
+```bash
+scalp audit --ci
+```
+
+On mismatch:
+
+```
+ERROR hash mismatch: lodash@4.17.21
+ERROR audit failed: 1 violations — blocking
+```
+
+Exit code 1.
+
+## How hash verification works
+
+1. SCAL-P reads `.scalp/lockfile.json` to get expected hashes
+2. It runs the dependency tree command (`npm ls --all --json`, etc.) to list installed packages
+3. For each package, it hashes the directory on disk using SHA-512 via `hash.Dir()`
+4. It compares the computed hash against the lockfile entry
+5. Results: verified (match), mismatched (different hash), or missing (no lockfile entry or directory not found)
+
+<Cards>
+  <Card title="scalp ci" href="/docs/commands/ci" />
+  <Card title="Audit & Reporting Guide" href="/docs/guides/audit-and-reporting" />
+  <Card title="scalp verify" href="/docs/commands/verify" />
+</Cards>

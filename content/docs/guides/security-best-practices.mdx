@@ -1,0 +1,171 @@
+---
+title: Security Best Practices
+icon: ShieldCheck
+description: Recommended practices for policy management, version control, CI enforcement, and supply chain security with SCAL-P.
+---
+
+## Version control: what to commit
+
+Not everything in `.scalp/` belongs in git. Here's the breakdown:
+
+| File | Commit? | Reason |
+|------|---------|--------|
+| `.scalp/policy.json` | ✅ Yes | Your security policy — belongs in version control |
+| `.scalp/policy.schema.json` | ✅ Yes | JSON Schema for editor autocomplete — commit once |
+| `.scalp/lockfile.json` | ✅ Recommended | Integrity snapshot — baseline for cross-session tampering detection |
+| `.scalp/cache/` | ❌ No | Trust score cache (download counts, CVEs) — ephemeral |
+| `.scalp/audit.log` | ❌ No | Append-only event log — machine-specific |
+| `.scalp/ci-report.json` | ❌ No | CI report output — generated per run |
+| `.scalp/*.sarif` | ❌ No | SARIF reports — generated per run |
+
+<Callout type="info">
+**Should you commit `.scalp/lockfile.json`?** It depends on your threat model.
+
+Committing it gives you a **versioned integrity baseline**: if a malicious dependency is introduced in a PR, `scalp audit` will detect the hash mismatch when the branch is compared against `main`. This is the strongest tamper-detection SCAL-P offers.
+
+The tradeoff: packages with platform-specific binaries may produce different hashes across OSs (e.g., macOS CI vs Linux CI). In practice, pick one platform as canonical (usually your Linux CI runner) and commit its lockfile. Hash mismatches on other platforms are benign — they don't indicate an attack.
+</Callout>
+
+### Committing lockfile (maximum security) — recommended
+
+```txt
+# .gitignore
+.scalp/cache/
+.scalp/audit.log
+.scalp/ci-report.json
+.scalp/*.sarif
+```
+
+The lockfile stays in git. Every CI run (`scalp ci`) updates it, and every PR audit compares against the committed baseline.
+
+### Ignoring lockfile (simplicity)
+
+```txt
+# .gitignore
+.scalp/lockfile.json
+.scalp/cache/
+.scalp/audit.log
+.scalp/ci-report.json
+.scalp/*.sarif
+```
+
+Tamper detection is limited to what changed since the last `scalp install` on the same machine. No cross-session or cross-PR baseline.
+
+## Policy management
+
+### Start permissive, tighten gradually
+
+A policy that's too strict from day one will frustrate your team and get disabled. Follow the migration path:
+
+1. `audit-only` + `warn` — observe
+2. `min_score` + `warn` — measure
+3. `denylist` + `warn` — control
+4. `block` — enforce
+
+### Review violations regularly
+
+Trust scores change over time — packages lose popularity, new CVEs are discovered, new versions are published. Review `.scalp/ci-report.json` periodically.
+
+### Use allowlist for critical projects
+
+For production services or libraries, use `allowlist` mode. Only explicitly approved packages can be installed:
+
+```json
+{
+  "trust": { "mode": "allowlist" },
+  "packages": {
+    "allow": [
+      { "name": "lodash", "versions": "^4.0.0" },
+      { "name": "express", "versions": "^4.18.0" }
+    ]
+  }
+}
+```
+
+## CI/CD security
+
+### Pin the action SHA
+
+```yaml
+# Good — immutable
+uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+
+# Risky — tag could be moved
+uses: scal-p-labs/scalp-action@v0.3.0
+```
+
+### Use fork context for external PRs
+
+```yaml
+- name: SCAL-P (fork)
+  if: github.event.pull_request.head.repo.fork == true
+  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  with:
+    pr-context: fork
+```
+
+### Block install scripts in CI
+
+```yaml
+# Default — safe for all contexts
+pr-context: fork
+```
+
+Install scripts are blocked automatically. Only allow scripts in internal PRs when you know exactly which packages need build steps.
+
+## Supply chain hardening
+
+### Verify the SCAL-P binary itself
+
+SCAL-P releases are checksummed using SCAL-P itself (dogfooding). Always verify the binary you download:
+
+```bash
+scalp verify \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt \
+  --ci
+```
+
+### Require hashes for all packages
+
+Enable `require_hash` in your policy to ensure every package has a lockfile integrity entry:
+
+```json
+{
+  "trust": {
+    "require_hash": true,
+    "min_score": 50
+  }
+}
+```
+
+This means any package installed outside the guarded flow (or tampered with after) is an automatic violation.
+
+### Use trusted CI for builds
+
+SCAL-P's CI mode (`--pr-context fork`) blocks install scripts and forces hash verification. This protects against:
+
+- Malicious postinstall scripts in dependencies
+- Lockfile tampering in fork PRs
+- Dependency confusion attacks
+
+## Audit trail
+
+Keep `.scalp/audit.log` for compliance and forensic analysis:
+
+```bash
+# Search for all blocking events
+grep '"status":"blocked"' .scalp/audit.log
+
+# Search for all hash mismatches
+grep '"hash_match":false' .scalp/audit.log
+
+# Export audit events for a specific package
+grep '"pkg":"lodash"' .scalp/audit.log
+```
+
+<Cards>
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="Migration Guide" href="/docs/guides/migration" />
+  <Card title="Troubleshooting" href="/docs/troubleshooting" />
+</Cards>

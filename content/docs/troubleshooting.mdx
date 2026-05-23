@@ -1,0 +1,164 @@
+---
+title: Troubleshooting
+icon: Bug
+description: Common errors, their causes, and how to fix them — lockfile issues, policy problems, network failures, and more.
+---
+
+<Accordions type="multiple">
+  <Accordion title="Multiple lockfiles detected">
+    ```
+    ERROR: multiple lockfiles found; use --pm to specify
+    ```
+
+    You have more than one lockfile in your project directory (e.g., both `package-lock.json` and `pnpm-lock.yaml`). SCAL-P can't auto-detect which package manager to use.
+
+    **Fix:** pass `--pm` explicitly:
+
+    ```bash
+    scalp ci --pm npm
+    scalp ci --pm pnpm
+    ```
+  </Accordion>
+
+  <Accordion title="No lockfile found">
+    ```
+    ERROR: no lockfile found
+    ```
+
+    SCAL-P needs a lockfile to resolve dependencies. Run your package manager's lockfile generation first:
+
+    ```bash
+    npm install --package-lock-only
+    # or
+    pnpm install --lockfile-only
+    # or
+    yarn install
+    # or
+    bun install
+    ```
+
+    Then run SCAL-P again.
+  </Accordion>
+
+  <Accordion title="yarn v1 (Classic) not supported">
+    ```
+    ERROR: unsupported yarn lockfile version (v1). SCAL-P requires yarn Berry (v2+)
+    ```
+
+    SCAL-P only supports yarn Berry (v2+). The yarn v1 lockfile format is fundamentally different.
+
+    **Fix:** migrate to yarn v4 (current stable) or use npm:
+
+    ```bash
+    npm install
+    scalp ci --pm npm
+    ```
+  </Accordion>
+
+  <Accordion title="Binary download failed (GitHub error)">
+    The install script or a `curl` command returns an HTML page instead of a binary.
+
+    **Causes:**
+    - The release doesn't exist for your platform/version
+    - GitHub API rate limiting
+    - Network proxy blocking the download
+
+    **Fix:** download manually from the [releases page](https://github.com/scal-p-labs/SCAL-P/releases) and place `scalp` in your PATH.
+
+    The install script checks for this via magic bytes and rejects HTML responses automatically.
+  </Accordion>
+
+  <Accordion title="Checksum verification failed">
+    When using `scalp verify` or the GitHub Action's install script:
+
+    ```
+    ERROR: checksum mismatch: expected sha512-a1b2..., got sha512-3c4d...
+    ```
+
+    This means the downloaded file doesn't match the expected hash. **Do not use the file.**
+
+    **Possible causes:**
+    - Corrupted download (retry)
+    - Man-in-the-middle attack (verify HTTPS certificate)
+    - The release checksums were regenerated (check the release page)
+
+    **Fix:** download again and verify. If it persists, [file an issue](https://github.com/scal-p-labs/SCAL-P/issues).
+  </Accordion>
+
+  <Accordion title="Trust score network timeout">
+    SCAL-P fetches download counts from `api.npmjs.org` and CVEs from `npm audit`. These calls have a 10-second timeout.
+
+    If the network is slow or unavailable, you'll see:
+
+    ```
+    WARN  failed to fetch downloads for lodash: context deadline exceeded
+    ```
+
+    This is **not a failure** — trust scores degrade gracefully (half points for unknown data). The command continues normally. Cached data is used when available.
+  </Accordion>
+
+  <Accordion title="Node_modules not found during audit">
+    ```
+    ERROR: package_not_installed: lodash@4.17.21
+    ```
+
+    A package in the lockfile is not found in `node_modules`. Either `node_modules` is missing entirely or a specific package was deleted.
+
+    **Fix:** reinstall dependencies and re-run:
+
+    ```bash
+    npm install
+    scalp audit
+    ```
+  </Accordion>
+
+  <Accordion title="Policy file parse error">
+    ```
+    ERROR: failed to parse policy: invalid character ...
+    ```
+
+    Your `.scalp/policy.json` has invalid JSON. Common mistakes:
+
+    - Trailing comma after last item: `{"allow": [{"name": "lodash"},]}`
+    - Missing comma between fields: `{"version": 1 "trust": {...}}`
+    - Comments in JSON: `// this is a comment` (JSON doesn't support comments)
+
+    **Fix:** validate your policy file:
+
+    ```bash
+    python3 -m json.tool .scalp/policy.json
+    ```
+  </Accordion>
+
+  <Accordion title="Install blocked but no violations shown">
+    ```
+    scalp install --guarded
+    ... (no output, exit 1)
+    ```
+
+    This usually means the install was blocked by enforcement but the log level is set to `log` (silent). Check `.scalp/audit.log` and `.scalp/ci-report.json` for details.
+
+    **Fix:** set `on_violation` to `warn` or `block` in your policy to see output.
+  </Accordion>
+
+  <Accordion title="Exit code 1 with no error message">
+    SCAL-P exited 1 but printed nothing useful.
+
+    Run with `--debug` to see detailed logs:
+
+    ```bash
+    scalp --debug ci
+    ```
+
+    This enables the Go standard library's slog output with file and line numbers.
+  </Accordion>
+</Accordions>
+
+## Getting help
+
+If you're still stuck:
+
+- Open an [issue](https://github.com/scal-p-labs/SCAL-P/issues)
+- Include the output of `scalp --debug <command>` if possible
+- Include your policy file (redact secrets)
+- Include the relevant parts of `.scalp/audit.log`

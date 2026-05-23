@@ -1,0 +1,172 @@
+---
+title: Architecture
+icon: Layers
+description: How SCAL-P's components fit together — CLI routing, policy engine, trust scoring, hashing, lockfile management, and reporting.
+---
+
+SCAL-P is not a daemon, not a proxy, not a plugin. It's a CLI tool that wraps your package manager. Every invocation is stateless: load policy, resolve, evaluate, act, log, exit.
+
+## Package structure
+
+```
+cmd/scalp/main.go              # entrypoint → cli.Run()
+internal/
+├── cli/                       # command routing (install, audit, ci, verify, checksum, stage, policy)
+├── policy/                    # policy loading, evaluation, enforcement
+├── lockfile/                  # .scalp/lockfile.json management + hash verification
+├── hash/                      # SHA-512 hashing (directory, single file, raw bytes)
+├── trust/                     # trust score engine, cache, npm API client
+├── reporter/                  # JSON, Markdown, and SARIF 2.1.0 reports
+├── audit/                     # NDJSON audit logger
+├── ctxutil/                   # context helpers
+├── pkgmanager/                # PackageManager interface + registry
+├── npm/                       # npm adapter
+├── pnpm/                      # pnpm adapter
+├── yarn/                      # yarn (Berry) adapter
+├── bun/                       # bun adapter
+└── version/                   # build-time version injection
+```
+
+## Data flow (guarded install)
+
+<Mermaid chart={`
+flowchart TD
+  A["CLI<br/>scalp install --guarded"]
+  A --> B["1. Load policy"]
+  B --> C["2. Resolve<br/>npm install --package-lock-only"]
+  C --> D["3. Parse lockfile<br/>adapter.ParseLockfile(ctx)<br/>→ PackageNode[]"]
+  D --> E["4. Evaluate policy<br/>allowlist / denylist / audit-only<br/>→ Violation[]"]
+  E --> F["5. Evaluate trust score<br/>4 factors: hash, maturity, downloads, CVEs<br/>→ Violation[] (appended)"]
+  F --> G["6. Enforce<br/>block → exit 1<br/>warn → log + continue"]
+  G -- passed --> H["7. Install<br/>npm install / pnpm install / etc."]
+  H --> I["8. Get dependency tree<br/>adapter.GetTree(ctx)<br/>→ DependencyTree"]
+  I --> J["9. Hash sync<br/>hash.Dir() for each package<br/>→ .scalp/lockfile.json"]
+  J --> K["10. Audit log<br/>→ .scalp/audit.log (NDJSON)"]
+`} />
+
+## Data flow (stage verify)
+
+<Mermaid chart={`
+flowchart TD
+  A["CLI<br/>scalp stage verify --stage-id <pkg>"]
+  A --> B["1. Load policy"]
+  B --> C["2. Stream tarball from stdin<br/>io.TeeReader + sha512 streaming<br/>Simultaneously hash + decompress"]
+  C --> D["3. Extract package identity<br/>archive/tar<br/>Find package/package.json"]
+  D --> E["4. Verify checksum<br/>compare h.Sum() vs --checksum"]
+  E --> F["5. Verify stage ID<br/>compare extracted name vs --stage-id"]
+  F --> G["6. Denylist check<br/>internal/policy/<br/>Check against deny rules"]
+  G --> H["7. SARIF output<br/>internal/reporter/"]
+  H --> I["8. Enforce<br/>internal/policy/"]
+`} />
+
+## Component diagram
+
+<Mermaid chart={`
+flowchart TD
+  CLI["CLI<br/>cli.go<br/>install, audit, ci, verify..."]
+  PM["pkgmanager<br/>interface"]
+  ADAPTER["npm / pnpm / yarn / bun<br/>adapter pattern"]
+  POLICY["policy.json"]
+  EVAL["policy.Evaluate<br/>trust.Evaluate<br/>allow/deny/transitive<br/>4 scoring factors"]
+  ENF["enforcement<br/>block / warn / log"]
+  HASH["hash<br/>SHA-512<br/>.scalp/lockfile.json"]
+  AUDIT["audit + reporter<br/>NDJSON + JSON + Markdown + SARIF"]
+
+  CLI --> PM
+  PM --> ADAPTER
+  POLICY --> EVAL
+  EVAL --> ENF
+  ENF -- if passed --> HASH
+  HASH --> AUDIT
+`} />
+
+## Package manager adapter
+
+Every package manager implements the same interface:
+
+```
+PackageManager
+├── Name() string
+├── Resolve(ctx, args...) error
+├── ParseLockfile(ctx) ([]PackageNode, error)
+├── Install(ctx, args...) error
+├── GetTree(ctx) (DependencyTree, error)
+└── LocalPath(name) string
+```
+
+Currently implemented: npm, pnpm, yarn (Berry v2+), bun. The registry in `internal/pkgmanager/registry.go` maps names to constructors.
+
+<Callout type="info">
+  To add a new package manager: implement the interface, register it in `init()`, done.
+</Callout>
+
+## Trust score pipeline
+
+<Mermaid chart={`
+flowchart TD
+  A["scorer.Evaluate(ctx, policy, nodes, lockfile)"]
+  A --> B["Load cache<br/>.scalp/cache/trust.json"]
+  B --> C["Fetch CVEs<br/>npm audit --json"]
+  C --> D{"For each PackageNode"}
+
+  D --> E["Hash verified?<br/>30 pts / 0 pts"]
+  D --> F["Version >= 1.0.0?<br/>15 pts / 0 pts"]
+  D --> G["Downloads<br/>0–20 pts"]
+  D --> H["CVEs<br/>15 pts / 0 pts"]
+
+  E --> I{"Score < min_score?"}
+  F --> I
+  G --> I
+  H --> I
+
+  I -- yes --> J["violation"]
+  I -- no --> K["Next PackageNode"]
+
+  J --> L["Update cache"]
+  K --> L
+  L --> M["Save cache<br/>.scalp/cache/trust.json"]
+`} />
+
+## CI command flow
+
+<Mermaid chart={`
+flowchart TD
+  A["scalp ci"]
+  A --> B["1. Load policy"]
+  B --> C["2. Resolve (lockfile-only)"]
+  C --> D["3. Parse lockfile"]
+  D --> E["4. Evaluate policy + trust"]
+  E --> F{"5. Violations?"}
+  F -- yes --> G["Annotate PR<br/>Write report<br/>Optional SARIF<br/>→ exit 1"]
+  F -- no --> H["6. Install<br/>--ignore-scripts in fork context"]
+  H --> I["7. Hash sync<br/>→ .scalp/lockfile.json"]
+  I --> J["8. Verify against tree<br/>(detect tampering)"]
+  J --> K["9. Write report + optional SARIF"]
+  K --> L["10. Exit 0"]
+`} />
+
+## File layout
+
+```
+.scalp/
+├── policy.json             ← your policy (checked in)
+├── policy.schema.json      ← JSON Schema (checked in)
+├── lockfile.json           ← auto-generated hashes (recommended to commit)
+├── ci-report.json          ← last CI run (never commit)
+├── cache/
+│   └── trust.json          ← download counts, CVEs (TTL 7 days)
+└── audit.log               ← append-only event log (never commit)
+```
+
+## Design constraints
+
+- **Zero external Go dependencies** — stdlib only. No framework, no SDK, no ORM.
+- **No daemon** — every invocation is stateless. Load, evaluate, act, exit.
+- **Offline-first** — network is a cache amplifier, not a requirement.
+- **Deterministic** — same inputs (policy, lockfile, cache) produce the same outputs.
+
+<Cards>
+  <Card title="Trust Scoring" href="/docs/advanced/trust-scoring" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+</Cards>

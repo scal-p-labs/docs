@@ -1,0 +1,156 @@
+---
+title: scalp install
+icon: Package
+description: Install packages via npm, pnpm, yarn, or bun with optional policy enforcement and hash sync.
+---
+
+Installs packages using your package manager of choice. Without `--guarded`, it's a transparent passthrough that syncs hashes after install. With `--guarded`, it evaluates policy and trust scores **before** anything hits disk.
+
+## Usage
+
+```bash
+scalp install [flags] [--] [pm args...]
+```
+
+## Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--pm` | auto-detected | Package manager: npm, pnpm, yarn, bun |
+| `--policy` | `.scalp/policy.json` | Path to policy file |
+| `--guarded` | false | Enforce policy and hash checks before install |
+| `--ci` | false | Force enforcement to `block` |
+
+## Passthrough mode
+
+Without `--guarded`, SCAL-P runs the install, then hashes every installed package directory and saves to `.scalp/lockfile.json`:
+
+```bash
+scalp install
+```
+
+Behind the scenes:
+
+1. Runs `npm install` / `pnpm install` / `yarn install` / `bun install` with your args
+2. Gets the dependency tree via `npm ls --all --json` (PM-specific equivalent)
+3. Hashes each package directory with SHA-512 via `hash.Dir()`
+4. Saves to `.scalp/lockfile.json`
+
+<Callout>
+  This mode is useful for gradually adopting SCAL-P. You get the lockfile and audit capability without any enforcement.
+</Callout>
+
+## Guarded mode
+
+With `--guarded`, SCAL-P evaluates policy **before** running the install:
+
+```bash
+scalp install --guarded
+```
+
+Flow:
+
+1. Load policy (from `.scalp/policy.json` or defaults)
+2. Resolve dependencies (lockfile-only, no install)
+3. Parse the lockfile
+4. Evaluate policy: allow/deny rules, transitive depth limits
+5. Evaluate trust scores (if `min_score > 0` or `require_hash`)
+6. If violations → apply enforcement (block, warn, or log)
+7. If no violations (or enforcement is warn/log) → run the actual install
+8. Hash each installed package → update `.scalp/lockfile.json`
+
+<Callout type="warning">
+  If enforcement is `block` and violations are found, **the install never runs**. No packages land in `node_modules`.
+</Callout>
+
+### Guarded install with a violation
+
+```bash
+scalp install --guarded
+```
+
+Policy denies `lodash-free`:
+
+```
+WARN  policy violation: lodash-free@1.0.0 (denylist_match: pattern:*-free)
+INFO  install skipped: policy violations found
+```
+
+### Guarded install passing
+
+```bash
+scalp install --guarded
+```
+
+```
+INFO  no violations — installing
+INFO  binary verified: lodash@4.17.21
+INFO  binary verified: express@4.18.2
+INFO  lockfile synced: 142 packages hashed
+```
+
+## Passing arguments to the package manager
+
+Use `--` to separate SCAL-P flags from PM arguments:
+
+```bash
+scalp install --guarded -- --save-dev typescript
+```
+
+This passes `--save-dev typescript` to the underlying package manager.
+
+## Override package manager
+
+Auto-detection works for most projects. Override when needed:
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab>
+    ```bash
+    scalp install --pm npm --guarded
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    scalp install --pm pnpm --guarded
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    scalp install --pm yarn --guarded
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    scalp install --pm bun --guarded
+    ```
+  </Tab>
+</Tabs>
+
+## Using with CI enforcement
+
+```bash
+scalp install --guarded --ci
+```
+
+`--ci` forces `on_violation` to `block` regardless of what's in your policy.
+
+## Guarded by default
+
+If you want all installs to be guarded without passing `--guarded` every time, set `default_mode` to `guarded` in your policy:
+
+```json
+{
+  "version": 1,
+  "enforcement": {
+    "default_mode": "guarded"
+  }
+}
+```
+
+Now plain `scalp install` behaves like `scalp install --guarded`.
+
+<Cards>
+  <Card title="scalp audit" href="/docs/commands/audit" />
+  <Card title="scalp ci" href="/docs/commands/ci" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+</Cards>

@@ -1,0 +1,164 @@
+---
+title: scalp ci
+icon: Workflow
+description: One command for CI — resolve, evaluate, block, install, audit, and report in a single step.
+---
+
+CI pipelines don't have time for a multi-step dance. `scalp ci` is the equivalent of `install --guarded` + `audit` + a structured report, packaged as a single command that exits 0 or 1.
+
+## Usage
+
+```bash
+scalp ci [flags]
+```
+
+## Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--pm` | auto-detected | Package manager override |
+| `--policy` | `.scalp/policy.json` | Policy path |
+| `--output` | `.scalp/ci-report.json` | JSON report path. Use `-` for stdout |
+| `--pr-context` | `fork` | PR context: `fork` or `internal` |
+| `--allow-scripts` | false | Allow install scripts (internal only) |
+| `--sarif` | "" | Path for SARIF 2.1.0 report |
+
+## How it works
+
+<Steps>
+  <Step>
+    **Load policy** — reads `.scalp/policy.json` or uses defaults
+  </Step>
+  <Step>
+    **Resolve** — runs the package manager's lockfile-only resolve (no install)
+  </Step>
+  <Step>
+    **Parse and evaluate** — parses the lockfile, evaluates every package against policy rules and trust scores
+  </Step>
+  <Step>
+    **Block if violations** — writes the JSON report, annotates the PR (GitHub Actions), and exits 1. Never installs.
+  </Step>
+  <Step>
+    **Install** — runs `npm install` (or equivalent) with `--ignore-scripts` in fork context
+  </Step>
+  <Step>
+    **Hash sync** — hashes every installed package directory, saves to `.scalp/lockfile.json`
+  </Step>
+  <Step>
+    **Audit** — verifies lockfile hashes against `node_modules`
+  </Step>
+  <Step>
+    **Report** — writes JSON report (+ optional SARIF), exits 0 or 1
+  </Step>
+</Steps>
+
+## Basic usage
+
+```bash
+cd my-project
+scalp ci
+```
+
+First run (no policy file):
+
+```
+WARN  policy not found; defaulting to audit-only
+INFO  ci passed: 0 violations
+```
+
+Report written to `.scalp/ci-report.json`:
+
+```json
+{
+  "version": "0.2",
+  "passed": true,
+  "audit": {
+    "verified": 142,
+    "mismatched": 0,
+    "missing": 0
+  }
+}
+```
+
+## CI with violations
+
+If a package violates policy or trust scoring:
+
+```
+ERROR policy violation: evil@1.0.0 (denylist_match: pattern:*-free)
+ERROR ci failed: 1 violations
+```
+
+Report:
+
+```json
+{
+  "version": "0.2",
+  "passed": false,
+  "violations": [
+    {
+      "package": "evil@1.0.0",
+      "reason": "denylist_match: pattern:*-free",
+      "rule": "denylist"
+    }
+  ],
+  "audit": {
+    "verified": 0,
+    "mismatched": 0,
+    "missing": 0
+  }
+}
+```
+
+## PR context
+
+```bash
+# For PRs from forks
+scalp ci --pr-context fork
+
+# For internal PRs
+scalp ci --pr-context internal
+```
+
+Fork context forces `require_hash: true` and blocks install scripts. Internal context respects your policy.
+
+## SARIF report
+
+```bash
+scalp ci --sarif .scalp/report.sarif
+```
+
+Generates a SARIF 2.1.0 report alongside the JSON report. Each violation becomes a SARIF result.
+
+## Write report to stdout
+
+```bash
+scalp ci --output -
+```
+
+Useful for debugging or piping to other tools.
+
+## Allow scripts (internal only)
+
+```bash
+scalp ci --pr-context internal --allow-scripts
+```
+
+<Callout type="warning">
+  Allowing install scripts means packages can run arbitrary code during install. Only use this for trusted projects where you know exactly which packages need build steps.
+</Callout>
+
+## Why separate from `install --guarded`?
+
+`scalp install --guarded` is a dev workflow — warnings, custom PM args, policy-dependent enforcement.
+
+`scalp ci` is a pipeline command — always blocks, no passthrough args, machine-readable output.
+
+They share the same evaluation engine. Same trust scores, same cache. The difference is the guardrails and the output format.
+
+<Cards>
+  <Card title="CI/CD Integration Guide" href="/docs/guides/ci-cd-integration" />
+  <Card title="GitHub Action" href="/docs/guides/github-action" />
+  <Card title="scalp policy check" href="/docs/commands/policy-check" />
+  <Card title="scalp audit" href="/docs/commands/audit" />
+</Cards>

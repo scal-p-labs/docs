@@ -24,3 +24,10 @@ yarn-error.log*
 .env*.local
 .vercel
 next-env.d.ts
+*.log
+
+# scal-p
+.scalp/cache/
+.scalp/audit.log
+.scalp/ci-report.json
+.scalp/*.sarif

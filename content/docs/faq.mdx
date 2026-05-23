@@ -1,0 +1,115 @@
+---
+title: FAQ
+icon: HelpCircle
+description: Frequently asked questions about SCAL-P — zero dependencies, lockfile design, comparisons, and troubleshooting.
+---
+
+<Accordions type="multiple">
+  <Accordion title="Why zero external dependencies?">
+    The entire project uses only the Go standard library. No cobra, no viper, no yaml parser, no HTTP framework.
+
+    This makes SCAL-P:
+    - **Easy to build** — `go build` just works. No module graph to resolve.
+    - **Easy to audit** — the entire dependency tree fits in one `go.mod` line.
+    - **Easy to vendor** — copy the source, it still compiles.
+
+    The tradeoff is more custom code (like the YAML parser for pnpm-lock.yaml), but the security benefits outweigh the maintenance cost.
+  </Accordion>
+
+  <Accordion title="Why a separate lockfile? Doesn't package-lock.json already have integrity hashes?">
+    npm's `package-lock.json` stores `integrity` as the **tarball hash from the registry**. SCAL-P's `.scalp/lockfile.json` stores the hash of the **installed content on disk**.
+
+    These are fundamentally different:
+
+    - A compromised registry could serve a bad tarball with a matching integrity field
+    - A postinstall script could modify files after extraction
+    - A malicious actor could tamper with files directly in `node_modules`
+
+    SCAL-P's lockfile catches all of these. The npm lockfile catches none of them.
+  </Accordion>
+
+  <Accordion title="Why SHA-512 instead of SHA-256?">
+    SHA-512 is faster than SHA-256 on 64-bit systems (uses 64-bit words natively), is well-supported in the Go standard library (`crypto/sha512`), and provides more than enough collision resistance for integrity verification.
+
+    For directory hashing, the performance matters — SCAL-P may hash hundreds of package directories in a single run.
+  </Accordion>
+
+  <Accordion title="How does SCAL-P compare to Socket or Snyk?">
+    They solve different problems:
+
+    | Tool | Focus | Key difference |
+    |------|-------|----------------|
+    | Socket | Blocking malicious packages by static analysis | SaaS platform, needs network |
+    | Snyk | Vulnerability scanning | CI integration, CVE database |
+    | Dependabot | Automated dependency updates | GitHub-native |
+    | **SCAL-P** | Policy + hashing + trust scoring | Offline-first, zero deps, CLI-only |
+
+    SCAL-P is not a vulnerability scanner (it uses `npm audit` for CVEs). It's a **policy enforcement and integrity verification layer** that happens to include trust scoring.
+  </Accordion>
+
+  <Accordion title="Can I use SCAL-P without a policy file?">
+    Yes. If `.scalp/policy.json` doesn't exist, SCAL-P uses a safe default:
+    - `trust.mode`: `audit-only`
+    - `on_violation`: `warn`
+    - `default_mode`: `passthrough`
+
+    Everything is logged, nothing is blocked. This makes onboarding painless — you get audit data without breaking your workflow.
+  </Accordion>
+
+  <Accordion title="What happens if npm audit fails or there's no network?">
+    Trust scores degrade gracefully. Network failures mean half points for downloads and CVEs (10 and 7 instead of 20 and 15). Cached data is used when available. The scorer never blocks a package because of a network failure — it just reduces the confidence component of the score.
+
+    HTTP calls have a 10s timeout. If it fails, the scorer moves on to the next package.
+  </Accordion>
+
+  <Accordion title="Does SCAL-P work with monorepos?">
+    Yes. SCAL-P works within a single project directory (the one with the `package.json` and lockfile). For monorepos with multiple packages, run SCAL-P in each workspace root or use a CI matrix.
+
+    Workspaces are supported through the package manager's own lockfile — npm, pnpm, yarn, and bun all handle workspace dependencies in their lockfile format, and SCAL-P parses them.
+  </Accordion>
+
+  <Accordion title="Can I use SCAL-P with yarn v1 (Classic)?">
+    No. SCAL-P supports yarn Berry (v2+). The yarn v1 lockfile format (`yarn.lock` v1) is fundamentally different from v2+ and the parser explicitly rejects it.
+
+    If you're on yarn v1, consider migrating to v4 (current stable) or use npm.
+  </Accordion>
+
+  <Accordion title="What about pnpm and bun support?">
+    Both fully supported since v0.2. SCAL-P auto-detects them from their lockfiles:
+    - pnpm: `pnpm-lock.yaml` — custom YAML parser included
+    - bun: `bun.lock` (JSON format) or `bun.lockb` (binary format)
+
+    Every command works with all four package managers: `install`, `audit`, `ci`, `policy check`.
+  </Accordion>
+
+  <Accordion title="Does SCAL-P support Windows?">
+    Yes. Pre-built binaries are available for Windows (amd64) in every release. All commands work on Windows, including `install`, `audit`, `ci`, `verify`, and `stage verify`.
+
+    Note: `stage verify` expects a piped tarball on stdin, which works in PowerShell and Git Bash.
+  </Accordion>
+
+  <Accordion title="How do I report a security vulnerability?">
+    See `SECURITY.md` in the repository. SCAL-P supports private vulnerability reporting via GitHub Security Advisories.
+
+    Scope includes: policy bypass, hash collision, path traversal, command injection, audit log forgery, and TOCTOU races.
+
+    Out of scope: third-party package vulnerabilities (use `npm audit` for those), signature verification.
+  </Accordion>
+
+  <Accordion title="Can I add support for a new package manager?">
+    Yes. Implement the `PackageManager` interface from `internal/pkgmanager/`:
+
+    ```go
+    type PackageManager interface {
+        Name() string
+        Resolve(ctx context.Context, args ...string) error
+        GetTree(ctx context.Context) (DependencyTree, error)
+        Install(ctx context.Context, args ...string) error
+        ParseLockfile(ctx context.Context) ([]PackageNode, error)
+        LocalPath(name string) string
+    }
+    ```
+
+    Register your adapter in `cli.init()` via `pkgmanager.Register()`. That's it.
+  </Accordion>
+</Accordions>

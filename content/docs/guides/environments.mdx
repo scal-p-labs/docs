@@ -1,0 +1,192 @@
+---
+title: Workflow Environments
+icon: PanelTopBottomDashed
+description: How SCAL-P behaves in local development, CI/CD pipelines, pre-merge checks, release engineering, and team workflows — and how to configure each.
+---
+
+SCAL-P is a single binary, but its role changes depending on where you run it. This page maps each environment to the right commands, flags, and configuration.
+
+## At a glance
+
+| Environment | Command | Mode | Policy required? |
+|---|---|---|---|
+| Local dev | `scalp install` | Passthrough (warn only) | No (defaults to allow + warn) |
+| Guarded local dev | `scalp install --guarded` | Enforcement | Recommended |
+| CI (PR checks) | `scalp policy check` | Evaluation only | Yes |
+| CI (install + verify) | `scalp ci` | Full pipeline | Recommended |
+| Pre-publish | `scalp stage verify` | Verification only | Optional |
+| Release verification | `scalp verify` | Checksum match | No |
+
+## Local development
+
+In day-to-day development, SCAL-P stays out of your way:
+
+```sh
+# Transparent — works exactly like npm install, no blocking
+scalp install express
+
+# Enforcement — evaluates policy, blocks violations, updates lockfile
+scalp install express --guarded
+```
+
+Without `--guarded`, SCAL-P resolves the tree, evaluates policy, logs violations as warnings, and passes through to the package manager. No lockfile is written, no install is blocked.
+
+With `--guarded`, the full pipeline runs: policy evaluation → enforcement → install → hash sync → audit log.
+
+### Lockfile in local dev
+
+If `.scalp/lockfile.json` exists (either committed or from a previous run), `scalp install` will **read** it for trust scoring. If it doesn't exist, trust scores that depend on hash verification degrade gracefully.
+
+### Offline mode
+
+SCAL-P works fully offline. Trust scores are cached locally in `.scalp/cache/trust.json` (TTL 7 days). If the cache is stale and there's no network, scores use available data and log a warning.
+
+For local development workflow, see [Quick Start](/docs/getting-started/quick-start).
+
+## CI/CD pipelines
+
+CI is where SCAL-P provides the most value. A single `scalp ci` command bundles:
+
+1. Resolve → lockfile-only (no install yet)
+2. Evaluate policy + trust scores
+3. Block or warn based on violations
+4. Install (with script handling per PR context)
+5. Hash every installed package → `.scalp/lockfile.json`
+6. Verify hashes against the dependency tree
+7. Write CI report + optional SARIF
+8. Exit 0 or 1
+
+<Mermaid chart={`
+flowchart TD
+  A["scalp ci"]
+  A --> B["1. Load policy"]
+  B --> C["2. Resolve (lockfile-only)"]
+  C --> D["3. Parse lockfile"]
+  D --> E["4. Evaluate policy + trust"]
+  E --> F{"Violations?"}
+  F -- yes --> G["Annotate PR<br/>Write report<br/>SARIF<br/>→ exit 1"]
+  F -- no --> H["5. Install<br/>--ignore-scripts in fork context"]
+  H --> I["6. Hash sync<br/>→ .scalp/lockfile.json"]
+  I --> J["7. Verify against tree"]
+  J --> K["8. Write report + SARIF"]
+  K --> L["9. Exit 0"]
+`} />
+
+### PR context handling
+
+```sh
+# Internal PR — trust the branch, allow install scripts
+scalp ci --pr-context internal
+
+# Fork PR — block install scripts, strict mode
+scalp ci --pr-context fork
+```
+
+Fork context (`fork`) blocks all lifecycle scripts and forces hash verification. This protects against malicious postinstall scripts in external contributions.
+
+### CI providers
+
+- **GitHub Actions** — see [GitHub Action](/docs/guides/github-action) for the composite action (`scal-p-labs/scalp-action`)
+- **GitLab CI, CircleCI, others** — see [CI/CD Integration](/docs/guides/ci-cd-integration) for YAML examples and exit code behavior
+
+## Pre-merge checks
+
+For a lightweight check that doesn't require installing dependencies, use `scalp policy check`:
+
+```sh
+scalp policy check --ref main
+```
+
+This resolves the dependency tree, evaluates it against policy and trust scores, and exits 0 or 1 — without downloading or installing a single package. Ideal for:
+
+- Quick lint-style checks in CI before the full install
+- Evaluating a dependency change before approving a PR
+- CI workflows where you want a fast feedback loop
+
+<Callout type="info">
+`scalp policy check` is the fastest SCAL-P command because it skips installation and hashing entirely. Use it as an early gate in CI before running the full `scalp ci`.
+</Callout>
+
+See [Command Reference: policy check](/docs/commands/policy-check).
+
+## Release engineering
+
+SCAL-P covers both sides of the release process: verifying what you're about to publish and verifying what you've already published.
+
+### Pre-publish: verify staged tarballs
+
+```sh
+npm pack 2>/dev/null | scalp stage verify --stage-id my-package --checksum abc123...
+```
+
+Streams the tarball through stdin, extracts the package identity, verifies the checksum, checks staged ID match, and checks the denylist — all without writing to disk.
+
+See [Command Reference: stage verify](/docs/commands/stage-verify).
+
+### Post-publish: verify release artifacts
+
+```sh
+scalp verify \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt \
+  --ci
+```
+
+SCAL-P releases are checksummed using SCAL-P itself (dogfooding). The `scalp verify` command confirms the binary you downloaded matches the published checksum.
+
+See [Command Reference: verify](/docs/commands/verify).
+
+## Team workflows
+
+### Shared policy in version control
+
+Commit `.scalp/policy.json` to your repository. Every team member and CI run uses the same rules:
+
+```txt
+repo/
+├── .scalp/
+│   ├── policy.json          ← committed, shared policy
+│   └── policy.schema.json   ← committed, editor autocomplete
+├── .gitignore
+└── ...
+```
+
+### Review lockfile changes in PRs
+
+When `.scalp/lockfile.json` is committed (recommended), PR diffs show exactly which package hashes changed — making supply chain tampering visible in the code review.
+
+### Gradual rollout
+
+For teams adopting SCAL-P across multiple repositories:
+
+1. Start with `audit-only` policy in CI — observe violations, no blocking
+2. Add `warn` mode — team sees violations in PR annotations
+3. Move to `block` mode — enforce on critical paths first (production deps)
+4. Expand to dev dependencies and transitive rules
+
+See [Migration Guide](/docs/guides/migration) for a detailed rollout plan.
+
+## Monorepos
+
+SCAL-P works naturally with package manager workspaces (npm, pnpm, yarn). Place the policy at the monorepo root:
+
+```txt
+monorepo/
+├── .scalp/
+│   └── policy.json          ← applies to all workspaces
+├── packages/
+│   ├── app/
+│   ├── lib/
+│   └── cli/
+├── package.json             ← "workspaces": ["packages/*"]
+└── .gitignore
+```
+
+Run `scalp ci` from the root — it resolves and installs the full workspace tree with a single policy evaluation.
+
+<Cards>
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+  <Card title="GitHub Action" href="/docs/guides/github-action" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="Quick Start" href="/docs/getting-started/quick-start" />
+</Cards>

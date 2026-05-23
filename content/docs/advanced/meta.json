@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "trust-scoring",
+    "architecture"
+  ],
+  "title": "Advanced",
+  "icon": "TrendingUp",
+  "defaultOpen": true
+}

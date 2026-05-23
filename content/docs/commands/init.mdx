@@ -1,0 +1,114 @@
+---
+title: scalp init
+icon: Sparkles
+description: Bootstrap .scalp/ with policy, lockfile, audit log, and cache — three templates depending on how strict you want to start.
+---
+
+Bootstraps a `.scalp/` directory in the current project. Creates a `policy.json`, `policy.schema.json`, empty `lockfile.json`, empty `audit.log`, and a `cache/` directory.
+
+## Usage
+
+```sh
+scalp init [--minimal | --strict]
+```
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--minimal` | Create a bare skeleton policy (version only, no trust or enforcement rules) |
+| `--strict`  | Create a hardcore policy with `denylist` mode, `min_score: 60`, `require_hash: true`, `block` enforcement, and `guarded` default mode |
+
+## Default
+
+Without flags, `scalp init` writes the safe default policy: `audit-only` trust mode, `warn` on violation, `passthrough` default mode.
+
+```json
+{
+  "version": 1,
+  "trust": { "mode": "audit-only" },
+  "enforcement": {
+    "on_violation": "warn",
+    "default_mode": "passthrough"
+  }
+}
+```
+
+<Callout type="info">
+The default policy is permissive by design. It logs violations as warnings but never blocks. Tighten it gradually as you adopt SCAL-P — see [Migration Guide](/docs/guides/migration).
+</Callout>
+
+## Minimal
+
+```sh
+scalp init --minimal
+```
+
+Writes only the `version` field. Useful when you want to start from scratch and define every field yourself:
+
+```json
+{
+  "version": 1
+}
+```
+
+## Strict
+
+```sh
+scalp init --strict
+```
+
+Writes a production-hardened policy with deny rules for packages with protestware or compromise history:
+
+```json
+{
+  "version": 1,
+  "trust": {
+    "mode": "denylist",
+    "min_score": 60,
+    "require_hash": true
+  },
+  "packages": {
+    "deny": [
+      { "pattern": "*-free" },
+      { "name": "colors" },
+      { "name": "faker" },
+      { "name": "node-ipc" },
+      { "name": "event-stream" }
+    ]
+  },
+  "transitive": {
+    "max_depth": 3
+  },
+  "enforcement": {
+    "on_violation": "block",
+    "default_mode": "guarded"
+  }
+}
+```
+
+## Created files
+
+```
+.scalp/
+├── policy.json           ← policy template (based on flags)
+├── policy.schema.json    ← JSON Schema for editor autocomplete
+├── lockfile.json         ← empty hash baseline ({})
+├── audit.log             ← append-only event log (empty)
+└── cache/                ← trust score cache directory
+```
+
+## When to use each variant
+
+| Variant | Best for |
+|---------|----------|
+| Default | First-time users, evaluation, local dev |
+| `--minimal` | Users who want to hand-craft their policy from a blank slate |
+| `--strict` | Production services, CI enforcement, org-wide rollout |
+
+<Cards>
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="Security Best Practices" href="/docs/guides/security-best-practices" />
+  <Card title="Migration Guide" href="/docs/guides/migration" />
+  <Card title="Command Reference" href="/docs/commands" />
+</Cards>

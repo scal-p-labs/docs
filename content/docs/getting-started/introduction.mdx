@@ -1,0 +1,141 @@
+---
+title: What is SCAL-P?
+icon: Shield
+description: SCAL-P is a security layer for npm, pnpm, yarn, and bun that enforces policy, verifies integrity, and scores trust before packages hit node_modules.
+---
+
+SCAL-P (**S**ecure **C**hain **A**ssurance **L**ayer for **P**ackages) is a security CLI that wraps npm, pnpm, yarn, and bun to enforce policy, verify integrity, and score trust — before packages hit your `node_modules`.
+
+Think of it as a **guard for your dependency graph**: you define rules, SCAL-P enforces them every time someone runs `npm install` (or `pnpm`, `yarn`, `bun`). No SaaS, no API keys, no remote calls — it runs entirely on your machine or CI.
+
+<Callout type="info">
+SCAL-P does **not** replace your package manager. It sits in front of it, reads the resolved dependency tree, evaluates policy, and either allows, warns, or blocks the operation. The package manager still does the actual install.
+</Callout>
+
+At a glance:
+
+| | |
+|---|---|
+| Package managers | npm, pnpm, yarn, bun |
+| Platforms | Linux, macOS, Windows |
+| Language | Go (zero external dependencies — stdlib only) |
+| License | Open source (Apache License 2.0) |
+| Mode | CLI tool — install as binary or `go install` |
+| SaaS required? | No. Fully self-contained, offline-capable. |
+| Lockfile | `.scalp/lockfile.json` — content-hash based, separate from `package-lock.json` |
+
+The core idea: **make every dependency auditable, traceable, and controllable by policy.** No implicit trust.
+
+## How it works
+
+Every package manager follows the same basic flow: resolve dependencies, download tarballs, unpack into `node_modules`, execute lifecycle scripts. The problem is that **execution and installation happen before you can inspect** what's coming.
+
+SCAL-P inserts itself into that flow at two points:
+
+<Steps>
+  <Step>
+    **Pre-install (policy evaluation).** When you run `scalp install <pkg>` or `scalp ci`, SCAL-P asks the package manager to resolve the dependency tree. It then evaluates every leaf — package name, version, publisher, registry, transitive depth — against your policy. If anything violates a rule, the operation stops before a single tarball is downloaded.
+  </Step>
+  <Step>
+    **Post-install (hash verification).** After the package manager finishes, SCAL-P walks `node_modules`, computes a SHA-512 hash for every package directory, and stores the result in `.scalp/lockfile.json`. On subsequent `scalp audit` runs, it re-hashes and compares — any mismatch means tampering.
+  </Step>
+</Steps>
+
+The wrapper pattern works like this:
+
+```sh
+# Instead of:
+npm install express
+
+# You run:
+scalp install express
+```
+
+Under the hood, `scalp install` resolves the tree, evaluates policy, then delegates the actual download and unpack to `npm install`. If policy passes, it runs and hashes the result. If policy fails, you get a clear violation report and nothing is installed.
+
+SCAL-P also ships a `scalp ci` command designed for CI pipelines that bundles all steps — resolve, evaluate, block, install, audit, report — into a single command with one exit code.
+
+## Why this exists
+
+The npm ecosystem has over 2 million packages. That scale created a massive attack surface. Supply chain attacks via malicious packages became a critical vector — and they keep getting worse:
+
+- **debug + chalk (Sep 2025)** — [18+ packages compromised](https://www.aikido.dev/blog/npm-debug-and-chalk-packages-compromised) including `debug`, `chalk`, `ansi-styles`, `supports-color`, `strip-ansi`. Combined impact: over 2 billion weekly downloads. Phishing attack on the maintainer bypassed TOTP. Payload targeted cryptocurrency wallets and Web3 transaction interception. \[[Cycode](https://cycode.com/blog/npm-debug-chalk-supply-chain-attack-the-complete-guide/)\]
+- **Axios (Mar 2026)** — [one of the worst attacks of 2026](https://github.com/axios/axios/issues/10636). Compromised maintainer account published versions `1.14.1` and `0.30.4` tagged as `latest`. Axios has 100M+ weekly downloads. Payload: a phantom dependency (`plain-crypto-js`) delivering a cross-platform RAT. Stayed live for ~3 hours. \[[Huntress](https://www.huntress.com/blog/supply-chain-compromise-axios-npm-package)\] \[[Elastic](https://www.elastic.co/security-labs/axios-one-rat-to-rule-them-all)\]
+- **node-ipc (May 2026)** — [three malicious versions](https://www.stepsecurity.io/blog/node-ipc-npm-supply-chain-attack) (`9.1.6`, `9.2.3`, `12.0.1`) published from a compromised maintainer account. 10M+ weekly downloads. 80KB obfuscated payload in the main bundle stealing cloud and CI/CD credentials via DNS exfiltration. \[[Snyk](https://snyk.io/blog/malicious-node-ipc-versions-published-npm/)\] \[[Hacker News](https://thehackernews.com/2026/05/stealer-backdoor-found-in-3-node-ipc.html)\]
+- **Shai-Hulud (2025–2026)** — [self-replicating worm](https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem) that steals npm/GitHub tokens and automatically publishes malicious versions to every package the token can access. Multiple waves ("The Third Coming", "Mini Shai-Hulud"). Uses Sigstore, OIDC abuse, and CI/CD persistence. \[[Palo Alto Unit42](https://unit42.paloaltonetworks.com/npm-supply-chain-attack/)\]
+- **Mini Shai-Hulud (May 2026)** — [ongoing worm campaign](https://snyk.io/blog/tanstack-npm-packages-compromised/) by TeamPCP. Compromised accounts publish 300+ malicious versions in 22 minutes. Targets include `@antv/*`, TanStack, SAP ecosystem, Mistral. Obfuscated Bun script steals AWS, GitHub, Kubernetes, npm tokens, and SSH keys, exfiltrates via C2 and GitHub repos, injects malicious CI/CD workflows, and self-propagates. \[[StepSecurity](https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem)\]
+
+Existing tools address parts of the problem but leave gaps:
+
+| Tool | What it does | What it **doesn't** do |
+|------|-------------|------------------------|
+| `npm audit` | Detects known CVEs | No authorship verification, no post-install integrity |
+| Snyk / Dependabot | Alerts on vulnerabilities | Can't block unauthorized packages by policy |
+| `package-lock.json` | Pins exact versions | Doesn't prevent tampering or typosquatting |
+| npm provenance | Links build to repo | Optional adoption, no enforcement |
+
+## How SCAL-P fixes it
+
+SCAL-P reverses the default trust model. Modern package managers execute code before you can verify what you're getting. SCAL-P flips the order:
+
+<Steps>
+  <Step>
+    **Policy before trust** — evaluate allow/deny rules and trust scores against the resolved dependency tree *before* a single byte is installed.
+  </Step>
+  <Step>
+    **Hash after install** — once packages are installed, SHA-512 hash every package directory and store it in a separate lockfile (`.scalp/lockfile.json`).
+  </Step>
+  <Step>
+    **Audit always** — every operation is logged to an append-only NDJSON audit log. You can always see what happened and why.
+  </Step>
+  <Step>
+    **CI enforcement** — `scalp ci` wraps everything into a single command: resolve, evaluate, block, install, audit, report. One exit code.
+  </Step>
+</Steps>
+
+## Threat coverage
+
+| Threat | How SCAL-P detects it |
+|--------|----------------------|
+| Compromised maintainer account | Hash mismatch against lockfile on `audit` |
+| Protestware / sabotage | Post-install hash audit catches modified files |
+| Malicious new version | Blocked by policy if not in allowlist |
+| Transitive supply chain | Recursive tree evaluation with `max_depth` limits |
+| Low-quality packages | Trust score < `min_score` triggers violation |
+| Release artifact tampering | `scalp verify` checks binary SHA-512 against checksums |
+| Staged package tampering | `scalp stage verify` computes tarball hash and extracts identity |
+| Staged package identity bypass | Package name extracted from tarball contents — not from user input |
+| Staged package denylist evasion | Denylist checked against actual tarball contents |
+
+## Design principles
+
+- **Zero external dependencies** — only the Go standard library. Easy to build, audit, and vendor.
+- **Don't break the user** — no policy file means allow + warn. SCAL-P shouldn't block your deploy because you forgot a config file.
+- **Audit-first** — every event is logged before any decision is made.
+- **Passthrough by default, guarded by choice** — `scalp install` without flags is transparent. `--guarded` activates enforcement.
+- **Offline-first** — network is a cache amplifier, not a requirement. Trust scores degrade gracefully.
+- **Separate lockfile** — SCAL-P locks installed content, not tarballs. Different purpose from `package-lock.json`.
+
+## When to use SCAL-P
+
+- **You maintain an open source project with many dependents** — SCAL-P catches compromised maintainer accounts and protestware before they reach your users.
+- **Your CI pipeline installs dependencies on every deploy** — `scalp ci` prevents a malicious PR dependency from reaching production.
+- **You ship a binary or CLI tool** — `scalp verify` lets you checksum your releases and lets consumers verify them.
+- **You publish npm packages in a multi-team org** — policy rules prevent any team from pulling in unapproved dependencies.
+- **You operate in a regulated environment** — the append-only audit log gives you a verifiable record of every install decision.
+
+## When NOT to use SCAL-P
+
+- **You need zero overhead in local development** — same as any security tool. Run `scalp install` without `--guarded` for transparent passthrough, or skip it entirely in dev.
+- **Your project has no lockfile or policy** — SCAL-P works fine (allow + warn by default), but you'll get the most value with a policy configured.
+- **You already use a different lockfile format** — SCAL-P's `.scalp/lockfile.json` is complementary to `package-lock.json`, not a replacement.
+
+
+## What's next?
+
+<Cards>
+  <Card title="Install SCAL-P" href="/docs/getting-started/installation" />
+  <Card title="Quick Start" href="/docs/getting-started/quick-start" />
+  <Card title="SCAL-P vs Other Tools" href="/docs/getting-started/comparison" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+</Cards>

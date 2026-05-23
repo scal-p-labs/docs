@@ -1,0 +1,147 @@
+---
+title: Migration Guide
+icon: ArrowRight
+description: Adopt SCAL-P gradually — from audit-only to full enforcement. Safe steps for existing projects.
+---
+
+Adopting a security tool shouldn't break your workflow. This guide walks you through adopting SCAL-P in phases, from zero-risk observation to full enforcement.
+
+## Phase 1: Observe
+
+Goal: see what SCAL-P reports without changing anything.
+
+```bash
+# Go to your project and run the CI command
+cd my-project
+scalp ci
+```
+
+No policy file needed — SCAL-P defaults to `audit-only` mode with `warn` enforcement. Everything is logged, nothing is blocked.
+
+Check the report:
+
+```bash
+cat .scalp/ci-report.json
+```
+
+You'll see how many packages were hashed and verified. If your project is healthy, everything passes.
+
+## Phase 2: Add a policy with warnings
+
+Create `.scalp/policy.json` with trust scoring enabled but warnings only:
+
+```json
+{
+  "$schema": ".scalp/policy.schema.json",
+  "version": 1,
+  "trust": { "min_score": 50 },
+  "enforcement": { "on_violation": "warn" }
+}
+```
+
+Run `scalp ci` again. You'll see warnings for any package scoring below 50.
+
+Review the violations — decide what to do:
+
+| Situation | Action |
+|-----------|--------|
+| Legitimate low-score package (e.g., old but critical) | Adjust `min_score` or add to `allow` |
+| Suspicious package | Investigate, add to `deny` |
+| New/unpopular package from trusted author | Relax score or add to allowlist |
+
+## Phase 3: Add allow/deny rules
+
+Refine your policy with package rules:
+
+```json
+{
+  "version": 1,
+  "trust": {
+    "mode": "denylist",
+    "min_score": 50
+  },
+  "packages": {
+    "deny": [
+      { "pattern": "*-free" },
+      { "pattern": "*debug*" }
+    ]
+  },
+  "enforcement": { "on_violation": "warn" }
+}
+```
+
+Run `scalp ci` again. Any package matching the deny patterns triggers a warning.
+
+## Phase 4: Block on violations
+
+Ready to enforce? Change `on_violation` to `block`:
+
+```json
+{
+  "version": 1,
+  "trust": { "min_score": 50 },
+  "enforcement": { "on_violation": "block" }
+}
+```
+
+Now `scalp ci` exits 1 on any violation. Run it locally first to make sure nothing breaks:
+
+```bash
+scalp ci
+```
+
+If something blocks, check the violations, adjust your policy, or fix the dependency.
+
+## Phase 5: Guarded by default
+
+Once you're confident, make guarded mode the default:
+
+```json
+{
+  "version": 1,
+  "trust": { "min_score": 50 },
+  "enforcement": {
+    "on_violation": "block",
+    "default_mode": "guarded"
+  }
+}
+```
+
+Now `scalp install` (without `--guarded`) also enforces policy. No more unguarded installs.
+
+## Phase 6: CI integration
+
+Add the SCAL-P action to your CI pipeline:
+
+```yaml
+name: SCAL-P
+on: [pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+
+      - name: SCAL-P CI
+        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+```
+
+## Migration checklist
+
+- [ ] Run `scalp ci` — baseline established
+- [ ] Create `.scalp/policy.json` — `min_score` with `warn`
+- [ ] Review all trust score warnings
+- [ ] Add allow/deny rules for known packages
+- [ ] Switch to `block` — test locally
+- [ ] Enable `default_mode: guarded`
+- [ ] Add to CI pipeline
+- [ ] Add `.scalp/` artifacts to `.gitignore`
+
+<Cards>
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+  <Card title="GitHub Action" href="/docs/guides/github-action" />
+</Cards>

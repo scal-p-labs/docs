@@ -1,0 +1,283 @@
+---
+title: "Tutorial: Securing an Express API"
+icon: GraduationCap
+description: End-to-end walkthrough — initialize a project, configure SCAL-P policy, run guarded installs, catch violations in CI, and handle a fork PR.
+---
+
+This tutorial walks through a realistic scenario: you're maintaining a public Express API and want to protect it against supply chain attacks with SCAL-P.
+
+You'll initialize the project, configure policy, catch a malicious dependency, set up CI enforcement, and handle a fork PR — all with concrete commands and outputs.
+
+## Prerequisites
+
+- Node.js 18+ and npm installed
+- [SCAL-P installed](/docs/getting-started/installation) (`scalp version` works)
+- A GitHub repository to push to (for the CI section)
+
+## 1. Initialize the project
+
+```sh
+mkdir express-api && cd express-api
+npm init -y
+npm install express
+```
+
+Now bootstrap SCAL-P's policy and directory structure:
+
+```sh
+scalp init
+```
+
+This creates `.scalp/policy.json` with safe defaults — `audit-only` mode, no blocking.
+
+## 2. Run your first `scalp ci`
+
+```sh
+scalp ci
+```
+
+Since there's no lockfile yet, SCAL-P resolves the tree, evaluates the policy, installs dependencies, and generates `.scalp/lockfile.json` with SHA-512 hashes for every package:
+
+```txt
+✓ Resolved 42 packages
+✓ Policy evaluation: 0 violations
+✓ Installed (npm install)
+✓ Hash sync: 42 entries written to .scalp/lockfile.json
+✓ CI report written to .scalp/ci-report.json
+✓ Exit 0
+```
+
+Inspect what was recorded:
+
+```sh
+scalp audit
+```
+
+Sample output:
+
+```txt
+Package          Hash match  Verified at
+express          ✅          2026-05-22T10:00:00Z
+body-parser      ✅          2026-05-22T10:00:00Z
+accepts          ✅          2026-05-22T10:00:00Z
+...
+42 of 42 packages — all match
+```
+
+## 3. Add a suspicious dependency
+
+A contributor opens a PR adding `colors` (or any package on the denylist) to the project:
+
+```sh
+npm install colors
+```
+
+Run `scalp ci` again with enforcement:
+
+```sh
+scalp ci
+```
+
+This time the evaluation finds violations:
+
+```txt
+✗ Policy evaluation: 2 violations
+  ✗ colors@1.4.2 — denylist match (protestware history)
+  ✗ colors@1.4.2 — hash not found in lockfile
+✗ Blocked: 2 violations exceed threshold
+✗ Exit 1
+```
+
+The install step never ran — no tarballs were downloaded.
+
+<Callout type="warning">
+Without SCAL-P, `npm install colors` would silently succeed. The malicious `node_modules/colors` would be deployed to production. SCAL-P caught it before it reached disk.
+</Callout>
+
+## 4. Create a real policy
+
+Now let's create a proper policy for the Express API. If you want a head start, use `scalp init --strict` — it writes a production-hardened policy with denylist, trust scoring, and block enforcement. Then customize from there.
+
+To manually replace `.scalp/policy.json` with a custom policy:
+
+```json
+{
+  "$schema": ".scalp/policy.schema.json",
+  "trust": {
+    "mode": "audit-only",
+    "min_score": 50,
+    "require_hash": true
+  },
+  "packages": {
+    "allow": [
+      { "name": "express", "versions": "^4.18.0" },
+      { "name": "body-parser", "versions": "^1.20.0" }
+    ],
+    "deny": [
+      "colors",
+      "faker",
+      "node-ipc"
+    ]
+  },
+  "transitive": {
+    "max_depth": 3,
+    "strategy": "warn"
+  },
+  "ci": {
+    "pr-context": "fork",
+    "sarif": true,
+    "sarif-file": ".scalp/sarif-report.sarif"
+  }
+}
+```
+
+Commit everything:
+
+```sh
+git add .scalp/policy.json .scalp/policy.schema.json .scalp/lockfile.json
+git commit -m "chore: add SCAL-P policy and initial lockfile"
+```
+
+<Callout type="info">
+Committing `.scalp/lockfile.json` gives you a versioned integrity baseline. See [Security Best Practices](/docs/guides/security-best-practices) for the tradeoffs.
+</Callout>
+
+## 5. Review the audit log
+
+SCAL-P logs every operation to `.scalp/audit.log`. Check what happened during the blocked install:
+
+```sh
+grep '"status":"blocked"' .scalp/audit.log
+```
+
+```json
+{"time":"2026-05-22T10:05:00Z","action":"policy_evaluate","status":"blocked","violations":2,"pkg":"colors@1.4.2","reason":"denylist + no_hash"}
+```
+
+Search for specific packages:
+
+```sh
+grep '"pkg":"body-parser"' .scalp/audit.log
+```
+
+```json
+{"time":"2026-05-22T10:00:00Z","action":"hash_sync","status":"ok","pkg":"body-parser@1.20.3","hash_match":true}
+```
+
+Full compliance trail — no external service required.
+
+## 6. Set up CI with GitHub Actions
+
+Create `.github/workflows/scalp-ci.yml`:
+
+```yaml
+name: SCAL-P
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  scalp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        with:
+          pr-context: ${{ github.event.pull_request.head.repo.fork == 'true' && 'fork' || 'internal' }}
+          sarif: true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .scalp/sarif-report.sarif
+```
+
+Push and open a PR. The action will:
+
+1. Run `scalp ci` with the appropriate PR context
+2. Annotate the PR with any violations
+3. Upload SARIF results to GitHub Security tab
+4. Fail the check if violations are found
+
+<Mermaid chart={`
+sequenceDiagram
+    participant Dev as Developer
+    participant GH as GitHub
+    participant Action as scalp-action
+    participant CLI as SCAL-P CLI
+
+    Dev->>GH: Push PR branch
+    GH->>Action: Trigger workflow
+    Action->>CLI: scalp ci --pr-context fork
+    CLI->>CLI: Load policy + resolve
+    CLI->>CLI: Evaluate violations
+    alt Has violations
+        CLI->>Action: Exit 1 + SARIF
+        Action->>GH: Annotate PR + upload SARIF
+        GH->>Dev: PR check ❌
+    else Clean
+        CLI->>Action: Exit 0 + SARIF
+        Action->>GH: Upload SARIF
+        GH->>Dev: PR check ✅
+    end
+`} />
+
+## 7. Simulate a fork PR attack
+
+Fork PRs are the most common supply chain entry point. An attacker submits a PR from a fork with a modified `.scalp/lockfile.json` pointing to a tampered package.
+
+Without SCAL-P, the modified lockfile could slip through review. With SCAL-P in fork context:
+
+```yaml
+pr-context: fork
+```
+
+The action:
+
+1. **Ignores the incoming lockfile** — re-computes hashes from scratch
+2. **Blocks install scripts** — no `postinstall` malware can execute
+3. **Verifies every package** — any hash mismatch produces a violation
+
+The PR check fails with annotations pointing to the tampered package — before any code reaches `main`.
+
+## 8. Verify the lockfile baseline
+
+After merging a clean PR, run `scalp audit` to compare the current lockfile against the committed baseline:
+
+```sh
+scalp audit --ci
+```
+
+This checks every hash in `.scalp/lockfile.json` against `node_modules`. If any package was tampered with (malicious commit, compromised CI runner, manual edit), the audit will report the mismatch:
+
+```txt
+✗ Hash mismatch: express@4.18.2
+  Expected: sha512-abc123...
+  Actual:  sha512-def456...
+  → Package tampered since last verified baseline
+```
+
+## Recap
+
+| Step | What you did | SCAL-P command |
+|---|---|---|
+| 1 | Initialize project + install deps | `npm install`, `scalp init` |
+| 2 | First guarded run | `scalp ci` |
+| 3 | Catch malicious dependency | `scalp ci` (blocked) |
+| 4 | Configure policy | Edit `.scalp/policy.json` |
+| 5 | Review audit log | `grep '"status":"blocked"' .scalp/audit.log` |
+| 6 | Set up CI | `.github/workflows/scalp-ci.yml` |
+| 7 | Fork PR simulation | `pr-context: fork` |
+| 8 | Verify integrity baseline | `scalp audit --ci` |
+
+<Cards>
+  <Card title="Quick Start" href="/docs/getting-started/quick-start" />
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+  <Card title="GitHub Action" href="/docs/guides/github-action" />
+  <Card title="Security Best Practices" href="/docs/guides/security-best-practices" />
+</Cards>

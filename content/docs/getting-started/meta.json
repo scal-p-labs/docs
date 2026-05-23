@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "introduction",
+    "installation",
+    "quick-start",
+    "comparison"
+  ],
+  "title": "Getting Started",
+  "icon": "Rocket",
+  "defaultOpen": true
+}

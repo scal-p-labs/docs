@@ -1,0 +1,226 @@
+---
+title: Audit & Reporting
+icon: SearchCheck
+description: How SCAL-P audits your dependencies and generates Markdown, JSON, and SARIF 2.1.0 reports.
+---
+
+Every operation in SCAL-P is audited. Whether you're installing, verifying, or running CI, events are logged and reports can be generated.
+
+## How audit works
+
+After packages are installed, SCAL-P creates a separate lockfile (`.scalp/lockfile.json`) that stores SHA-512 hashes of **installed package directories** — not tarball hashes from the registry.
+
+```
+.scalp/lockfile.json
+├── lockVersion: 1
+├── generatedAt: "2026-05-22T12:00:00Z"
+└── packages:
+    ├── "lodash@4.17.21":
+    │   ├── resolved: "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+    │   ├── integrity: "sha512-a1b2c3d4e5f6..."
+    │   └── verifiedAt: "2026-05-22T12:00:05Z"
+    └── "express@4.18.2":
+        ├── resolved: "https://registry.npmjs.org/express/-/express-4.18.2.tgz"
+        ├── integrity: "sha512-x7y9y6i..."
+        └── verifiedAt: "2026-05-22T12:00:06Z"
+```
+
+When you run `scalp audit`, it re-hashes every package directory and compares against the lockfile. Any mismatch means something changed on disk.
+
+<Callout type="warning">
+  This detects post-install tampering, modified files, added files, and removed files. If a compromised script modified a package after install, `scalp audit` catches it.
+</Callout>
+
+## `scalp audit`
+
+```bash
+scalp audit
+```
+
+If everything matches:
+
+```
+INFO  audit passed: 142 verified, 0 mismatched, 0 missing
+```
+
+If tampering is detected:
+
+```
+WARN  hash mismatch: lodash@4.17.21 (expected: sha512-a1b2..., got: sha512-3c4d...)
+WARN  audit failed: 141 verified, 1 mismatched, 0 missing
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--pm` | Package manager override (auto-detected) |
+| `--policy` | Policy path (default `.scalp/policy.json`) |
+| `--ci` | Force enforcement to `block` |
+| `--report` | Generate a report file (`.md` or `.sarif`) |
+| `--artifact` | Path to a binary artifact to verify alongside packages |
+| `--checksum` | Checksums file for binary verification |
+
+### Audit + report
+
+```bash
+scalp audit --report audit-report.md
+```
+
+This generates a full Markdown report. Use `--report -` to write to stdout:
+
+```bash
+scalp audit --report -
+```
+
+### Audit + binary verify
+
+```bash
+scalp audit \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt \
+  --report audit-report.md
+```
+
+This runs the package audit and binary verification in a single command, producing one unified report.
+
+## Report sections (Markdown)
+
+The Markdown report includes:
+
+| Section | Contents |
+|---------|----------|
+| Header | Tool version, policy status (loaded/missing), package manager, pass/fail |
+| Summary | Total packages, verified/mismatched/missing counts, trust violations, CVEs |
+| Hash Verification | Per-package status table |
+| Trust Scores | Per-package breakdown (hash, maturity, downloads, CVEs) with verdict |
+| CVEs | Vulnerability table from npm audit |
+| Binary Verification | Artifact hash comparison |
+| Policy | Full policy JSON in a code block |
+| Violations | All violations with rule and reason |
+| Audit Events | Raw NDJSON event log |
+
+Example output:
+
+```markdown
+# Audit Report
+
+**Tool:** scalp 0.2.0 (a1b2c3d)
+**Date:** 2026-05-22T12:00:00Z
+**Policy:** .scalp/policy.json ✓ loaded
+**Package Manager:** npm
+**Status:** ✅ PASSED
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Total packages | 142 |
+| ✓ Verified | 142 |
+| ✗ Mismatched | 0 |
+| ✗ Missing | 0 |
+| Trust violations | 0 |
+| CVEs | 0 |
+```
+
+## JSON report (CI)
+
+The CI JSON report is a machine-readable format designed for pipeline consumption:
+
+```json
+{
+  "version": "0.2",
+  "passed": true,
+  "violations": [],
+  "audit": {
+    "verified": 142,
+    "mismatched": 0,
+    "missing": 0
+  }
+}
+```
+
+On failure:
+
+```json
+{
+  "version": "0.2",
+  "passed": false,
+  "violations": [
+    {
+      "package": "lodash@4.17.21",
+      "reason": "trust_score: 17/50 (hash:0, maturity:15, dl:10, cves:7)",
+      "rule": "min_score:50"
+    }
+  ],
+  "audit": {
+    "verified": 141,
+    "mismatched": 1,
+    "missing": 0
+  }
+}
+```
+
+## SARIF 2.1.0 reports
+
+SCAL-P generates SARIF (Static Analysis Results Interchange Format) reports compatible with GitHub Code Scanning:
+
+```bash
+scalp ci --sarif .scalp/report.sarif
+```
+
+Each policy violation becomes a SARIF result:
+
+| SARIF field | Maps from |
+|-------------|-----------|
+| `ruleId` | Normalized rule name (`require_hash`, `min_score`, `allowlist`) |
+| `level` | `error` for most rules, `warning` for `max_depth` |
+| `message.text` | Violation reason |
+| `locations[].physicalLocation.artifactLocation.uri` | Path to package in `node_modules/` |
+
+<Callout type="info">
+  The `results` array is always present — even when empty — to satisfy GitHub's `upload-sarif` action requirement.
+</Callout>
+
+### GitHub Code Scanning integration
+
+The easiest way is using the SCAL-P GitHub Action:
+
+```yaml
+- name: Run SCAL-P CI
+  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  with:
+    version: latest
+    sarif: .scalp/report.sarif
+  continue-on-error: true
+
+- name: Upload SARIF to GitHub
+  if: success() || failure()
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: .scalp/report.sarif
+```
+
+Or using the CLI directly if you have `scalp` installed in your runner:
+
+```bash
+scalp ci --sarif .scalp/report.sarif
+```
+
+## Audit log
+
+`.scalp/audit.log` is an append-only NDJSON file. Every event (install, audit, verify, stage verify) produces one line:
+
+```json
+{"ts":"2026-05-22T12:00:00Z","event":"hash_check","pkg":"lodash@4.17.21","status":"verified","hash_match":true}
+{"ts":"2026-05-22T12:00:01Z","event":"binary_verify","pkg":"scalp_linux_amd64.tar.gz","status":"mismatch","hash_match":false}
+{"ts":"2026-05-22T12:00:02Z","event":"policy_violation","pkg":"evil@1.0.0","status":"blocked","rule":"denylist","reason":"pattern:*-free"}
+```
+
+Grep-friendly, Splunk-friendly, ELK-friendly.
+
+<Cards>
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+  <Card title="scalp audit" href="/docs/commands/audit" />
+  <Card title="scalp ci" href="/docs/commands/ci" />
+</Cards>

@@ -1,0 +1,135 @@
+---
+title: Quick Start
+icon: Rocket
+description: From zero to a guarded install in about 2 minutes.
+---
+
+You have a JavaScript project with a `package.json`. You want to know what you're installing before you install it.
+
+This guide takes you from nothing to a policy-enforced install in a few minutes.
+
+<Callout type="info">
+  **Prerequisite:** SCAL-P must be installed on your machine. See [Installation](/docs/getting-started/installation) if you haven't done this yet.
+</Callout>
+
+## Run your first CI check
+
+Go to your project directory and run:
+
+```bash
+cd my-project
+scalp ci
+```
+
+<Callout type="info">
+  No config file needed. If you don't have a policy yet, SCAL-P uses a safe default: audit-only mode with warn enforcement.
+</Callout>
+
+You'll see output like:
+
+```
+WARN  policy not found; defaulting to audit-only
+INFO  ci passed: 0 violations
+```
+
+All packages passed because the default policy only audits. No blocking.
+
+## Check the report
+
+SCAL-P writes a JSON report to `.scalp/ci-report.json`:
+
+```json
+{
+  "version": "0.2",
+  "passed": true,
+  "audit": {
+    "verified": 142,
+    "mismatched": 0,
+    "missing": 0
+  }
+}
+```
+
+142 packages hashed and verified. All match. Your `node_modules` is consistent with what was installed.
+
+## Create a policy
+
+Now add some guardrails. Create `.scalp/policy.json`:
+
+```json
+{
+  "$schema": ".scalp/policy.schema.json",
+  "version": 1,
+  "trust": { "min_score": 60 },
+  "enforcement": { "on_violation": "warn" }
+}
+```
+
+Run `scalp ci` again. Now every package gets a trust score (0–80). Packages below 60 trigger a warning.
+
+Try it with a denied package to see enforcement in action:
+
+```json
+{
+  "version": 1,
+  "trust": { "mode": "denylist" },
+  "packages": {
+    "deny": [{ "pattern": "*-free" }]
+  },
+  "enforcement": { "on_violation": "warn" }
+}
+```
+
+```bash
+scalp ci
+```
+
+If you have a package like `lodash-free` in your tree, you'll see:
+
+```
+WARN  policy violation: lodash-free@1.0.0 (denylist_match: pattern:*-free)
+```
+
+## Install with enforcement
+
+Ready to block? Run a guarded install:
+
+```bash
+scalp install --guarded
+```
+
+This resolves dependencies, evaluates policy and trust scores, and blocks the install if violations are found. Only if everything passes does it proceed to install and hash every package directory.
+
+<Callout type="warning">
+  `--guarded` evaluates *before* install. If a violation is found and enforcement is `block`, the install never runs. No packages land in `node_modules`.
+</Callout>
+
+## What the directory looks like after your first run
+
+```
+my-project/
+├── .scalp/
+│   ├── policy.json             ← your policy (create this)
+│   ├── policy.schema.json      ← JSON Schema for editor autocomplete
+│   ├── lockfile.json           ← auto-generated SHA-512 hashes
+│   ├── ci-report.json          ← last CI run report
+│   ├── report.sarif            ← SARIF 2.1.0 report (with --sarif)
+│   ├── cache/
+│   │   └── trust.json          ← cached download counts and CVEs
+│   └── audit.log               ← append-only NDJSON event log
+├── node_modules/
+├── package.json
+└── package-lock.json
+```
+
+<Callout type="info">
+  Commit `.scalp/policy.json` and `.scalp/policy.schema.json` to version control. Never commit `lockfile.json`, `cache/`, or `audit.log`.
+</Callout>
+
+## What's next?
+
+<Cards>
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+  <Card title="Trust Scoring" href="/docs/advanced/trust-scoring" />
+</Cards>

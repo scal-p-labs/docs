@@ -1,0 +1,282 @@
+---
+title: CI/CD Integration
+icon: GitBranch
+description: Integrate SCAL-P into GitHub Actions, GitLab CI, or any CI pipeline. PR context, SARIF uploads, and exit code behavior.
+---
+
+`scalp ci` is designed from the ground up for CI pipelines. It wraps the entire flow — resolve, evaluate, block, install, audit, report — into a single command with one exit code.
+
+## How `scalp ci` works
+
+```bash
+scalp ci [--pm npm|pnpm|yarn|bun] [--output report.json] [--pr-context fork] [--sarif report.sarif]
+```
+
+Flow:
+
+1. Loads policy (or defaults)
+2. Resolves dependencies (lockfile-only, no install)
+3. Evaluates every package against policy + trust scores
+4. If violations → writes report, annotates PR, exits 1
+5. Installs everything (with `--ignore-scripts` in fork context)
+6. Hashes each package → `.scalp/lockfile.json`
+7. Audits lockfile against `node_modules`
+8. Writes structured JSON + optional SARIF report
+
+## PR context: fork vs internal
+
+`--pr-context` tells `scalp ci` where the code is coming from:
+
+| Context | `require_hash` | Install scripts | Use case |
+|---------|----------------|----------------|----------|
+| `fork` (default) | forced on | blocked | PRs from untrusted forks |
+| `internal` | as configured | blocked unless `--allow-scripts` | PRs from team members |
+
+<Callout type="warning">
+  Fork mode overrides your policy's `require_hash` to `true`. Every package must have a lockfile integrity entry. A fork could have tampered with the lockfile, so this is non-negotiable.
+</Callout>
+
+## Install scripts: blocked by default
+
+npm packages can run arbitrary code during install via `preinstall`, `install`, and `postinstall` scripts. This is one of the most common supply chain attack vectors.
+
+`scalp ci` passes `--ignore-scripts` to the package manager. No code runs.
+
+To allow scripts (internal context only):
+
+```bash
+scalp ci --pr-context internal --allow-scripts
+```
+
+<Callout type="info">
+  `--allow-scripts` without `--pr-context internal` is still blocked. You must explicitly opt into both.
+</Callout>
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Everything passed — policy, trust, hashes |
+| 1 | Violations found (or something failed) |
+
+No other exit codes.
+
+## GitHub Actions
+
+The easiest way is using the official [SCAL-P GitHub Action](https://github.com/scal-p-labs/scalp-action). It downloads the correct binary for your platform, runs `scalp ci`, and produces reports.
+
+<Callout type="info">
+  Always pin the action to a specific commit SHA for supply chain security — tags are mutable, SHAs are not.
+</Callout>
+
+### Basic workflow
+
+```yaml
+name: SCAL-P Security Check
+on: [pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+
+      - name: Run SCAL-P CI
+        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        with:
+          version: latest
+          output: .scalp/ci-report.json
+
+      - name: Upload report
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scalp-report
+          path: .scalp/ci-report.json
+```
+
+### With SARIF and Code Scanning
+
+```yaml
+name: SCAL-P with Code Scanning
+on: [pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+
+      - name: Run SCAL-P CI
+        uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+        with:
+          version: latest
+          sarif: .scalp/report.sarif
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .scalp/report.sarif
+```
+
+<Callout type="info">
+  PR annotations are automatically emitted via `::error::` / `::warning::` workflow commands when `GITHUB_ACTIONS=true`. Violations appear inline on the PR diff. The action also sets the `status` output to `pass` or `fail` for conditional steps.
+</Callout>
+
+### Fork vs internal PR context
+
+```yaml
+- name: Run SCAL-P CI (fork)
+  if: github.event.pull_request.head.repo.fork == true
+  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  with:
+    version: latest
+    pr-context: fork
+    sarif: .scalp/report.sarif
+
+- name: Run SCAL-P CI (internal)
+  if: github.event.pull_request.head.repo.fork == false
+  uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+  with:
+    version: latest
+    pr-context: internal
+    sarif: .scalp/report.sarif
+```
+
+### Multi-package-manager matrix
+
+<Tabs items={["npm + pnpm + yarn", "with bun"]}>
+  <Tab>
+    ```yaml
+    name: SCAL-P Multi-PM
+    on: [pull_request]
+
+    jobs:
+      security:
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            pm: [npm, pnpm, yarn]
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+
+          - name: Install ${{ matrix.pm }}
+            run: npm install -g ${{ matrix.pm }}
+
+          - name: Run SCAL-P CI with ${{ matrix.pm }}
+            uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+            with:
+              version: latest
+              pm: ${{ matrix.pm }}
+              sarif: .scalp/${{ matrix.pm }}-report.sarif
+    ```
+  </Tab>
+  <Tab>
+    ```yaml
+    name: SCAL-P Multi-PM (with bun)
+    on: [pull_request]
+
+    jobs:
+      security:
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            include:
+              - pm: npm
+              - pm: pnpm
+              - pm: yarn
+              - pm: bun
+                install: |
+                  curl -fsSL https://bun.sh/install | bash
+                  echo "$HOME/.bun/bin" >> $GITHUB_PATH
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+
+          - name: Install ${{ matrix.pm }}
+            run: ${{ matrix.install || format('npm install -g {0}', matrix.pm) }}
+
+          - name: Run SCAL-P CI with ${{ matrix.pm }}
+            uses: scal-p-labs/scalp-action@e9bdbfcba5193c4a7334398065ac7244456e7ed9
+            with:
+              version: latest
+              pm: ${{ matrix.pm }}
+              sarif: .scalp/${{ matrix.pm }}-report.sarif
+    ```
+  </Tab>
+</Tabs>
+
+## GitLab CI
+
+```yaml
+scalp-security:
+  stage: test
+  image: node:22
+  before_script:
+    - npm ci
+  script:
+    # download and install scalp CLI
+    - curl -fL https://github.com/scal-p-labs/SCAL-P/releases/latest/download/scalp_linux_amd64.tar.gz | tar xz
+    - install -m 755 scalp /usr/local/bin/
+    # run CI check
+    - scalp ci --output .scalp/ci-report.json
+  artifacts:
+    paths:
+      - .scalp/ci-report.json
+    when: always
+```
+
+## Using `scalp audit` in CI
+
+For projects that already have `node_modules` and `.scalp/lockfile.json`, you can run just the audit step:
+
+```bash
+scalp audit --ci --report audit-report.md
+```
+
+This skips the install and only checks hash integrity. Useful as a quick pre-merge check.
+
+<Callout type="info">
+  If you're using the GitHub Action, audit-only isn't a built-in mode — but you can run it as a CLI step after the action, or use the action with `scalp ci` (which includes audit).
+</Callout>
+
+## CI with policy check only
+
+If you want to evaluate policy without installing anything:
+
+```bash
+scalp policy check --ci
+```
+
+This resolves dependencies, parses the lockfile, evaluates policy + trust scores, and applies enforcement. No install, no hash sync.
+
+## Custom report output
+
+Write reports to stdout for debugging:
+
+```bash
+scalp ci --output -
+```
+
+Write JSON and SARIF simultaneously:
+
+```bash
+scalp ci --output ci-report.json --sarif .scalp/report.sarif
+```
+
+<Cards>
+  <Card title="GitHub Action Reference" href="/docs/guides/github-action" />
+  <Card title="scalp ci command" href="/docs/commands/ci" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="Security Best Practices" href="/docs/guides/security-best-practices" />
+</Cards>

@@ -1,0 +1,141 @@
+---
+title: scalp stage verify
+icon: ClipboardCheck
+description: Verify a staged npm package tarball from stdin — hash verification, identity check, denylist, and SARIF output.
+---
+
+Verifies a staged npm package tarball piped through stdin. Designed for pre-publish or pre-install workflows where you receive a tarball and want to check its integrity, identity, and policy compliance before using it.
+
+## Usage
+
+```bash
+npm stage download <stage-id> | scalp stage verify --stage-id <package@version> [flags]
+```
+
+<Callout type="info">
+  `npm stage download` is part of npm's private packages / staging feature. If you don't use npm stages, you can pipe any tarball from any source — `curl`, `cat`, or a CI pipeline — as long as it's a valid npm package tarball on stdin.
+</Callout>
+
+## Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--stage-id` | required | Expected package name + version (e.g. `lodash@4.17.21`) |
+| `--policy` | `.scalp/policy.json` | Policy path |
+| `--checksum` | "" | Expected SHA-512 hash for the tarball |
+| `--sarif` | "" | Path for SARIF 2.1.0 report |
+| `--ci` | false | Force enforcement to `block` |
+
+## Verification checks
+
+<Steps>
+  <Step>
+    **Hash verification** — computes SHA-512 of the piped tarball in a streaming fashion (no temp files). Compares against `--checksum` if provided.
+  </Step>
+  <Step>
+    **Package identity** — extracts `package/package.json` from inside the tarball, parses the `name` field, and verifies it matches `--stage-id`.
+  </Step>
+  <Step>
+    **Denylist check** — checks the extracted package name against policy deny rules (name + pattern). This runs against the **actual tarball contents**, not the user-supplied `--stage-id`, preventing bypass attacks.
+  </Step>
+  <Step>
+    **Enforcement** — `--ci` forces block. Otherwise uses policy's `on_violation`.
+  </Step>
+</Steps>
+
+## Example
+
+```bash
+npm stage download lodash@4.17.21 | scalp stage verify --stage-id lodash@4.17.21
+```
+
+On success:
+
+```
+INFO  stage verify passed: lodash@4.17.21
+```
+
+On failure:
+
+```
+WARN  package identity mismatch: expected lodash@4.17.21, got malicious-pkg@1.0.0
+WARN  stage verify failed: lodash@4.17.21
+```
+
+## With checksum verification
+
+```bash
+npm stage download lodash@4.17.21 | \
+  scalp stage verify \
+    --stage-id lodash@4.17.21 \
+    --checksum sha512-a1b2c3d4e5f6...
+```
+
+If the tarball hash doesn't match:
+
+```
+ERROR hash mismatch: expected sha512-a1b2..., got sha512-7f8e...
+```
+
+## With denylist enforcement
+
+Policy blocks packages matching `*-free`:
+
+```json
+{
+  "version": 1,
+  "packages": {
+    "deny": [{ "pattern": "*-free" }]
+  },
+  "enforcement": { "on_violation": "block" }
+}
+```
+
+```bash
+npm stage download lodash-free@1.0.0 | scalp stage verify --stage-id lodash-free@1.0.0
+```
+
+```
+ERROR denylist match: lodash-free (pattern:*-free)
+ERROR stage verify failed: lodash-free@1.0.0
+```
+
+## Security: why denylist uses tarball contents
+
+The denylist check runs against the **actual package name extracted from the tarball**, not the user-supplied `--stage-id`.
+
+This prevents bypass attacks where an attacker provides a benign stage ID like `lodash@4.17.21` but pipes a malicious tarball with a different internal `package.json`. SCAL-P extracts the real name from inside the tarball and checks that against the denylist.
+
+## SARIF output
+
+```bash
+npm stage download lodash@4.17.21 | \
+  scalp stage verify \
+    --stage-id lodash@4.17.21 \
+    --sarif .scalp/stage-report.sarif
+```
+
+## CI mode
+
+```bash
+npm stage download lodash@4.17.21 | \
+  scalp stage verify \
+    --stage-id lodash@4.17.21 \
+    --ci
+```
+
+Forces `block` on any violation.
+
+## How streaming works
+
+The tarball is read from stdin via an `io.TeeReader` that simultaneously feeds data to both a SHA-512 hasher and a gzip decompressor. The decompressed tar stream is parsed to find `package/package.json`. Once the package name is extracted and the hash is computed, all checks run. No temporary files, no disk writes.
+
+<Callout type="info">
+  This streaming approach means SCAL-P can verify tarballs of any size without memory or disk overhead.
+</Callout>
+
+<Cards>
+  <Card title="scalp verify" href="/docs/commands/verify" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="Architecture" href="/docs/advanced/architecture" />
+</Cards>

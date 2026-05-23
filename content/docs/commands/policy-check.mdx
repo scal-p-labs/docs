@@ -1,0 +1,82 @@
+---
+title: scalp policy check
+icon: CheckCheck
+description: Evaluate policy and trust scores against resolved dependencies without installing anything. Ideal for quick pre-merge checks.
+---
+
+Evaluates your policy against the current dependency tree without installing a single package. Useful for quick feedback in CI or during development — resolve, parse, evaluate, enforce, done.
+
+## Usage
+
+```bash
+scalp policy check [flags]
+```
+
+## Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--pm` | auto-detected | Package manager override |
+| `--policy` | `.scalp/policy.json` | Policy path |
+| `--ci` | false | Force enforcement to `block` |
+
+## How it works
+
+1. Loads policy (or defaults if missing)
+2. Resolves dependencies (lockfile-only, no install)
+3. Parses the lockfile → flat list of `PackageNode`
+4. Evaluates policy rules: allow/deny, transitive `max_depth`
+5. Evaluates trust scores (if `min_score > 0` or `require_hash`)
+6. Applies enforcement: `block`, `warn`, or `log`
+
+No install, no hash sync, no audit — just evaluation.
+
+## Basic usage
+
+```bash
+scalp policy check
+```
+
+When policy passes:
+
+```
+INFO  policy check passed: 0 violations
+```
+
+When violations are found:
+
+```
+WARN  policy violation: malicious-pkg@1.0.0 (denylist_match: name:malicious-pkg)
+WARN  policy check failed: 1 violations
+```
+
+## With CI enforcement
+
+```bash
+scalp policy check --ci
+```
+
+Forces `on_violation` to `block`. Exit code 1 on any violation.
+
+## Check a specific policy
+
+```bash
+scalp policy check --policy custom-policy.json
+```
+
+## Why use `policy check` instead of `ci`?
+
+| Situation | Use |
+|-----------|-----|
+| Quick feedback on policy rules | `policy check` |
+| Full verification (install + audit) | `ci` |
+| Before merging a PR | `policy check --ci` |
+| Before deploying | `ci` |
+
+`policy check` is faster because it skips the install and hash sync. Use it when you want policy feedback in seconds, not minutes.
+
+<Cards>
+  <Card title="scalp ci" href="/docs/commands/ci" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="CI/CD Integration" href="/docs/guides/ci-cd-integration" />
+</Cards>

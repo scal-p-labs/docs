@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "getting-started",
+    "guides",
+    "commands",
+    "advanced",
+    "faq",
+    "troubleshooting"
+  ],
+  "title": "SCAL-P Docs",
+  "description": "Documentation for SCAL-P — Secure Chain Assurance Layer for Packages",
+  "icon": "Shield",
+  "defaultOpen": true,
+  "root": true
+}

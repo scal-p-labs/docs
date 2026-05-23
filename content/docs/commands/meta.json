@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "init",
+    "install",
+    "audit",
+    "ci",
+    "policy-check",
+    "stage-verify",
+    "verify"
+  ],
+  "title": "Commands",
+  "icon": "Terminal",
+  "defaultOpen": true
+}

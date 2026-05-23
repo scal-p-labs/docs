@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "policy-configuration",
+    "audit-and-reporting",
+    "github-action",
+    "ci-cd-integration",
+    "environments",
+    "migration",
+    "security-best-practices",
+    "tutorial-express-api"
+  ],
+  "title": "Guides",
+  "icon": "BookOpen",
+  "defaultOpen": true
+}

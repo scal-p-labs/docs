@@ -1,0 +1,135 @@
+---
+title: SCAL-P vs Other Tools
+icon: GitCompare
+description: How SCAL-P compares to npm audit, Snyk, Socket.dev, Dependabot, npm provenance, and OpenSSF Scorecard — and when to use each.
+---
+
+SCAL-P is not a replacement for existing security tools. It fills a specific gap: **policy enforcement at install time** with **post-install integrity verification** — two things that most tools don't touch.
+
+This page compares SCAL-P with the most common tools in the JS supply chain security space.
+
+## At a glance
+
+| Capability | SCAL-P | npm audit | Snyk | Dependabot | Socket.dev | npm provenance |
+|---|---|---|---|---|---|---|
+| Pre-install policy | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Post-install integrity | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Block installs by policy | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Trust scoring | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| SARIF reports | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Offline-capable | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| SaaS-free | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Multi-PM (npm/pnpm/yarn/bun) | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| CVE database | Configurable | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Staged tarball verification | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Binary release verification | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Append-only audit log | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+## Deep dive
+
+### npm audit
+
+npm's built-in vulnerability scanner checks your resolved dependency tree against the npm advisory database.
+
+**What it does well:** Zero setup, always available, maintained by npm.
+
+**Where it falls short:**
+- Only detects *known* CVEs — no protection against zero-days, protestware, or typosquatting
+- No policy engine — can't block installs, only warn
+- No post-install integrity — if a package is tampered with after install, npm audit won't notice
+- npm-only — doesn't cover pnpm, yarn, bun
+
+**SCAL-P fits alongside npm audit.** Use npm audit for CVE detection, SCAL-P for everything else.
+
+### Snyk
+
+Snyk is a commercial vulnerability scanner with CI integration, PR checks, and a large advisory database.
+
+**What it does well:** Broad language support, deep CVE database, fix PRs, license scanning.
+
+**Where it falls short:**
+- SaaS-required — needs API keys, network access, and a Snyk account
+- No install-time enforcement — can alert on a PR but can't block `npm install` locally
+- No content integrity — doesn't hash or verify what's actually in `node_modules`
+- No staged package verification
+
+**SCAL-P + Snyk is a strong combination.** Snyk catches known CVEs across your whole org; SCAL-P catches everything else at the install point.
+
+### Dependabot
+
+GitHub's free dependency updater and vulnerability alerter.
+
+**What it does well:** Automatic PRs for outdated/vulnerable deps, tight GitHub integration, free.
+
+**Where it falls short:**
+- Alert-only — can't block anything
+- No policy engine
+- No integrity verification
+- Only works within GitHub's ecosystem
+
+### Socket.dev
+
+Socket.dev is the closest tool to SCAL-P in terms of supply chain focus. It analyzes package behavior, detects red flags, and scores risk.
+
+**What it does well:** Deep package analysis (install scripts, network calls, filesystem access), risk scoring, real-time monitoring.
+
+**Where it falls short:**
+- SaaS-required — needs a Socket account and API key
+- No post-install integrity
+- No local policy enforcement — detection happens in the cloud, not at install time
+- No staged tarball verification
+- No offline mode
+
+**SCAL-P vs Socket.dev:** They target similar problems from different angles. Socket.dev analyzes *what a package does* (static analysis). SCAL-P controls *whether a package can be installed* and *verifies what actually got installed* (policy + integrity). They complement each other.
+
+### npm provenance
+
+npm's built-in provenance attestation links published packages to their source repository and CI run.
+
+**What it does well:** Cryptographically links a package back to its build — useful for verifying that a package came from the right repo.
+
+**Where it falls short:**
+- Adoption is low — most packages don't publish with provenance
+- No enforcement — even if provenance is available, npm won't block an install based on it
+- Publication-only — doesn't help with post-install integrity or staged tarballs
+
+### OpenSSF Scorecard
+
+Scorecard evaluates the security health of open source repos (branch protection, code review, SAST, etc.).
+
+**What it does well:** Standardized security scoring for repos, great for vetting upstream dependencies.
+
+**Where it falls short:**
+- Repo-level, not package-level — Scorecard scores the repository, not individual releases
+- No install-time integration — it's a separate CLI that you run manually or in CI
+- No policy enforcement
+
+## Using SCAL-P alongside other tools
+
+The most effective supply chain security posture uses multiple layers:
+
+```txt
+1. OpenSSF Scorecard → vet the repos you depend on (periodic)
+2. Snyk / Dependabot → catch known CVEs (continuous)
+3. Socket.dev → detect suspicious package behavior (continuous)
+4. SCAL-P → enforce policy, verify integrity, block threats (at install time)
+```
+
+Each layer covers what the others miss. SCAL-P is unique in covering **install-time enforcement** and **post-install integrity** — the gap that no other tool in the JS ecosystem fills.
+
+## What makes SCAL-P different
+
+To summarize, here's what no other JS supply chain tool does:
+
+- **Pre-install policy enforcement** — evaluate and block before a tarball is downloaded
+- **Post-install content hashing** — SHA-512 of installed directories, versioned in a separate lockfile
+- **Zero SaaS, offline-first** — no API keys, no accounts, runs fully locally
+- **Staged package verification** — verify a tarball before it's published
+- **Multi-package-manager** — one tool for npm, pnpm, yarn, and bun
+
+<Cards>
+  <Card title="Install SCAL-P" href="/docs/getting-started/installation" />
+  <Card title="Quick Start" href="/docs/getting-started/quick-start" />
+  <Card title="Policy Configuration" href="/docs/guides/policy-configuration" />
+  <Card title="Security Best Practices" href="/docs/guides/security-best-practices" />
+</Cards>

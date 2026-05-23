@@ -1,0 +1,155 @@
+---
+title: scalp verify & checksum
+icon: BadgeCheck
+description: Generate SHA-512 checksums for release artifacts and verify them against a checksums file. Dogfooding built in.
+---
+
+SCAL-P spends all day verifying npm packages. But what about SCAL-P itself? Binary verify closes the loop: the same hashing and policy engine that protects your dependencies also protects your SCAL-P binary.
+
+Two commands form a release verification chain:
+
+- **`scalp checksum`** — generate SHA-512 checksums for files
+- **`scalp verify`** — verify a file against a checksums file
+
+## `scalp checksum`
+
+Generate checksums for release artifacts:
+
+```bash
+scalp checksum scalp_linux_amd64.tar.gz scalp_darwin_amd64.tar.gz > checksums.txt
+```
+
+Output:
+
+```
+sha512-a1b2c3d4e5f6...  scalp_linux_amd64.tar.gz
+sha512-7f8e9d0c1b2a...  scalp_darwin_amd64.tar.gz
+```
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--output` | stdout | Write checksums to file instead of stdout |
+
+Write to file:
+
+```bash
+scalp checksum --output checksums.txt *.tar.gz
+```
+
+<Callout type="info">
+  `scalp checksum` is a pure hash tool. No policy, no audit, no enforcement.
+</Callout>
+
+## `scalp verify`
+
+Verify a downloaded artifact against a checksums file:
+
+```bash
+scalp verify \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt
+```
+
+On match:
+
+```
+INFO  binary verified: scalp_linux_amd64.tar.gz (sha512-a1b2...)
+```
+
+On mismatch:
+
+```
+WARN  binary mismatch: scalp_linux_amd64.tar.gz
+       expected: sha512-a1b2c3d4e5f6...
+       actual:   sha512-7f8e9d0c1b2a...
+```
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--artifact` | required | Path to the downloaded release artifact |
+| `--checksum` | required | Path to the checksums file |
+| `--policy` | `.scalp/policy.json` | Policy controlling enforcement |
+| `--ci` | false | Override enforcement to `block` |
+
+### Enforcement
+
+| Enforcement | Hash match | Hash mismatch |
+|-------------|-----------|---------------|
+| `warn` (default) | exit 0 | logged, exit 0 |
+| `block` | exit 0 | exit 1 |
+| `log` | exit 0 | silent, exit 0 |
+
+With `--ci`, enforcement is forced to `block`.
+
+### Verify with CI enforcement
+
+```bash
+scalp verify \
+  --artifact scalp_linux_amd64.tar.gz \
+  --checksum checksums.txt \
+  --ci
+```
+
+On mismatch, exit code 1:
+
+```
+ERROR binary mismatch: blocking
+```
+
+## Audit events
+
+Every `scalp verify` call produces one audit event:
+
+```json
+{"ts":"2026-05-22T12:00:00Z","event":"binary_verify","pkg":"scalp_linux_amd64.tar.gz","status":"verified","hash_match":true}
+```
+
+Appended to `.scalp/audit.log` alongside all other events.
+
+## How it works
+
+1. Parses the checksums file (skips blank lines and `#` comments)
+2. Looks up the artifact filename in the checksums map
+3. Computes SHA-512 of the artifact via `hash.File()`
+4. Compares hashes (constant-time comparison)
+5. Logs a `binary_verify` audit event
+6. Applies enforcement if mismatch
+
+## Example: release pipeline
+
+```yaml
+# Generate checksums during release
+- run: scalp checksum scalp_*.tar.gz > checksums.txt
+
+# Upload both
+- run: |
+    gh release create v0.2.0 \
+      scalp_linux_amd64.tar.gz \
+      scalp_darwin_amd64.tar.gz \
+      checksums.txt
+```
+
+```yaml
+# User verifies after download
+- run: |
+    scalp verify \
+      --artifact scalp_linux_amd64.tar.gz \
+      --checksum checksums.txt \
+      --ci
+```
+
+## What it does NOT do
+
+- **Does not GPG-sign** the checksums file (do that separately)
+- **Does not verify** checksums file authenticity (HTTPS + signing is on you)
+- **Does not support wildcards** in `--artifact` (one file at a time)
+
+<Cards>
+  <Card title="scalp stage verify" href="/docs/commands/stage-verify" />
+  <Card title="Audit & Reporting Guide" href="/docs/guides/audit-and-reporting" />
+  <Card title="Architecture" href="/docs/advanced/architecture" />
+</Cards>
