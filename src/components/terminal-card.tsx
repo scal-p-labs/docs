@@ -84,7 +84,10 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
         </div>
 
         {visibleLines.map((line, i) => (
-          <div key={i} className={cn(line.startsWith("! ") ? "text-yellow-400" : "text-muted-foreground/90")}>
+          <div
+            key={i}
+            className={cn(line.startsWith("! ") ? "text-yellow-400" : "text-muted-foreground/90")}
+          >
             {line}
           </div>
         ))}
