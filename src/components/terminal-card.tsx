@@ -69,7 +69,7 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
   const visibleLines = outputIndex > 0 ? demo.lines.slice(0, outputIndex - 1) : [];
 
   return (
-    <div className="rounded-lg bg-zinc-950 p-4 font-mono text-sm leading-relaxed shadow-2xl">
+    <div className="rounded-lg bg-accent p-4 font-mono text-sm leading-relaxed">
       <div className="mb-3 flex items-center gap-1.5">
         <span className="inline-block size-2.5 rounded-full bg-red-500" />
         <span className="inline-block size-2.5 rounded-full bg-yellow-500" />
@@ -79,12 +79,12 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
 
       <div className="space-y-1">
         <div>
-          <span className="text-zinc-500">$ </span>
-          <span className="text-zinc-100">{demo.title}</span>
+          <span className="text-muted-foreground">$ </span>
+          <span className="text-accent-foreground">{demo.title}</span>
         </div>
 
         {visibleLines.map((line, i) => (
-          <div key={i} className={cn(line.startsWith("! ") ? "text-yellow-400" : "text-zinc-400")}>
+          <div key={i} className={cn(line.startsWith("! ") ? "text-yellow-400" : "text-muted-foreground/90")}>
             {line}
           </div>
         ))}
@@ -104,11 +104,11 @@ function TerminalWindow({ demo }: { demo: TerminalDemo }) {
 
 export function TerminalCard() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden p-0">
       <Tabs defaultValue="init" orientation="vertical" className="gap-0">
         <TabsList
           variant="default"
-          className="w-32 flex-col justify-start gap-0 rounded-none border-r bg-transparent h-64"
+          className="w-32 flex-col justify-start gap-0 rounded-none border-r h-64"
         >
           {Object.keys(demos).map((key) => (
             <TabsTrigger key={key} value={key}>
