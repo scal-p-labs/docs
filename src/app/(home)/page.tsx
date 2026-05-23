@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { logo } from "@/lib/shared";
 import { TerminalCard } from "@/components/terminal-card";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
     <main className="flex flex-col flex-1 justify-between h-full">
       <section className="flex flex-col items-center justify-center flex-1 px-6 text-center">
-        <img src={logo} alt="SCAL-P" className="h-16 mb-6" />
+        <Image src={logo} alt="SCAL-P" width={64} height={64} className="mb-6" />
         <h1 className="text-4xl font-bold mb-4">Secure Chain Assurance Layer for Packages</h1>
         <p className="text-lg text-muted-foreground max-w-xl mb-8">
           Policy enforcement, integrity verification, and trust scoring for npm, pnpm, yarn, and
