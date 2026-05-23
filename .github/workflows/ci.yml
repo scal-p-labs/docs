@@ -23,6 +23,11 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install
+      - uses: scal-p-labs/scalp-action@0b29e6acb5c358a7c6b6d470c6ab8cb6e86fc217 # v0.3.0
+        with:
+          pm: pnpm
+          policy: .scalp/policy.json
+          pr-context: ${{ github.event_name == 'pull_request' && 'fork' || 'internal' }}
       - name: Format check
         run: pnpm fmt:check
       - name: Lint
