@@ -1,9 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "helpers:pinGitHubActionDigestsToSemver"
-  ],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigestsToSemver"],
   "prHourlyLimit": 2,
   "minimumReleaseAge": "3 days",
   "labels": ["dependencies"],
@@ -27,7 +24,12 @@
     },
     {
       "description": "Group Tailwind ecosystem",
-      "matchPackageNames": ["tailwindcss", "@tailwindcss/postcss", "tailwind-merge", "tw-animate-css"],
+      "matchPackageNames": [
+        "tailwindcss",
+        "@tailwindcss/postcss",
+        "tailwind-merge",
+        "tw-animate-css"
+      ],
       "groupName": "Tailwind CSS"
     },
     {
@@ -37,7 +39,13 @@
     },
     {
       "description": "Group TypeScript and type packages",
-      "matchPackageNames": ["typescript", "@types/node", "@types/react", "@types/react-dom", "@types/mdx"],
+      "matchPackageNames": [
+        "typescript",
+        "@types/node",
+        "@types/react",
+        "@types/react-dom",
+        "@types/mdx"
+      ],
       "groupName": "TypeScript"
     },
     {
