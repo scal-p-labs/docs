@@ -119,9 +119,7 @@ export function TerminalCard() {
       <Tabs defaultValue="init" orientation="vertical" className="gap-0">
         <TabsList
           variant="line"
-          className={cn(
-            "justify-start gap-0 rounded-none w-32 flex-col h-72",
-          )}
+          className={cn("justify-start gap-0 rounded-none w-32 flex-col h-72")}
         >
           {Object.keys(demos).map((key) => (
             <TabsTrigger key={key} value={key}>

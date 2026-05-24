@@ -39,7 +39,9 @@ export default function HomePage() {
       </section>
 
       <section className="w-full max-w-2xl mx-auto px-6 pb-16 flex flex-col gap-4">
-        <h1 className="text-2xl">Try it now, it's easy, it's safe, it's auditable, it's traceable.</h1>
+        <h1 className="text-2xl">
+          Try it now, it's easy, it's safe, it's auditable, it's traceable.
+        </h1>
         <Card className="p-4">
           <div className="rounded-lg bg-accent p-4 font-mono text-sm leading-relaxed">
             <div className="mb-3 flex items-center gap-1.5">
