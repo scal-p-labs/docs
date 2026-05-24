@@ -117,7 +117,12 @@ export function TerminalCard() {
   return (
     <Card className="overflow-hidden p-0">
       <Tabs defaultValue="init" orientation="vertical" className="gap-0">
-        <TabsList variant="line" className="w-32 flex-col justify-start gap-0 rounded-none h-72">
+        <TabsList
+          variant="line"
+          className={cn(
+            "justify-start gap-0 rounded-none w-32 flex-col h-72",
+          )}
+        >
           {Object.keys(demos).map((key) => (
             <TabsTrigger key={key} value={key}>
               Try {key}
@@ -125,7 +130,7 @@ export function TerminalCard() {
           ))}
         </TabsList>
         {Object.entries(demos).map(([key, d]) => (
-          <TabsContent key={key} value={key} className="p-4">
+          <TabsContent key={key} value={key} className="p-3 sm:p-4">
             <TerminalWindow demo={d} />
           </TabsContent>
         ))}
