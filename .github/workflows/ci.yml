@@ -23,7 +23,7 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install
-      - uses: scal-p-labs/scalp-action@42d6a173c8fc83b7928fdb0b08a2c67061eafa64 # v0.6.1
+      - uses: scal-p-labs/scalp-action@859d44532d9c0812c2e98ec7b157d0ce52fde82b # v0.6.1
         with:
           pm: pnpm
           policy: .scalp/policy.json

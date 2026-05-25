@@ -2,7 +2,7 @@
   "version": "0.2",
   "passed": true,
   "audit": {
-    "verified": 1458,
+    "verified": 1464,
     "mismatched": 55,
     "missing": 0
   }
