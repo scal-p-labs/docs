@@ -17,6 +17,7 @@ Not everything in `.scalp/` belongs in git. Here's the breakdown:
 | `.scalp/audit.log`          | ❌ No          | Append-only event log — machine-specific                            |
 | `.scalp/ci-report.json`     | ❌ No          | CI report output — generated per run                                |
 | `.scalp/*.sarif`            | ❌ No          | SARIF reports — generated per run                                   |
+| `.scalp/*.key`              | ❌ No          | Signing key — sensitive secrets generated in audit                  |
 
 <Callout type="info">
 **Should you commit `.scalp/lockfile.json`?** It depends on your threat model.
@@ -35,6 +36,7 @@ The tradeoff: packages with platform-specific binaries may produce different has
 .scalp/audit.log
 .scalp/ci-report.json
 .scalp/*.sarif
+.scalp/*.key
 ```
 
 The lockfile stays in git. Every CI run (`scalp ci`) updates it, and every PR audit compares against the committed baseline.
@@ -48,6 +50,7 @@ The lockfile stays in git. Every CI run (`scalp ci`) updates it, and every PR au
 .scalp/audit.log
 .scalp/ci-report.json
 .scalp/*.sarif
+.scalp/*.key
 ```
 
 Tamper detection is limited to what changed since the last `scalp install` on the same machine. No cross-session or cross-PR baseline.

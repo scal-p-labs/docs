@@ -2,8 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/scal-p-labs/SCAL-P/main/.scalp/policy.schema.json",
   "version": 1,
   "trust": {
-    "mode": "audit-only",
-    "min_score": 20,
+    "mode": "denylist",
+    "min_score": 30,
     "require_hash": true
   },
   "packages": {

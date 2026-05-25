@@ -31,3 +31,4 @@ next-env.d.ts
 .scalp/audit.log
 .scalp/ci-report.json
 .scalp/*.sarif
+.scalp/*.key
